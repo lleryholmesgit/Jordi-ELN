@@ -1,0 +1,120 @@
+﻿@model RecordEditorViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit record" : "New record";
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Experiment Record</p>
+        <h1>@ViewData["Title"]</h1>
+        <p>Status: <span class="status @Model.Status.ToString().ToLowerInvariant()">@Model.Status</span></p>
+    </div>
+    @if (Model.Id.HasValue)
+    {
+        <a class="button secondary" asp-action="Details" asp-route-id="@Model.Id">Back to details</a>
+    }
+</section>
+
+<form asp-action="Save" method="post" class="editor-layout" data-record-editor>
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="InstrumentLinksJson" type="hidden" data-instrument-links />
+    <input asp-for="NotebookBlocksJson" type="hidden" data-notebook-blocks />
+    <input asp-for="RichTextContent" type="hidden" data-rich-text-content />
+    <input asp-for="FlowchartJson" type="hidden" data-flowchart-json />
+    <div asp-validation-summary="All" class="validation"></div>
+
+    <section class="panel form-panel">
+        <div class="form-grid two-col">
+            <div><label asp-for="Title"></label><input asp-for="Title" /></div>
+            <div><label asp-for="ExperimentCode"></label><input asp-for="ExperimentCode" /></div>
+            <div><label asp-for="ConductedOn"></label><input asp-for="ConductedOn" /></div>
+            <div><label asp-for="TemplateId">Template</label><select asp-for="TemplateId" asp-items="Model.TemplateOptions"><option value="">No template</option></select></div>
+            <div><label asp-for="ProjectName"></label><input asp-for="ProjectName" /></div>
+            <div><label asp-for="PrincipalInvestigator"></label><input asp-for="PrincipalInvestigator" readonly /></div>
+        </div>
+    </section>
+
+    <section class="panel form-panel notebook-editor" data-notebook-editor>
+        <div class="panel-header">
+            <div>
+                <h2>Notebook content</h2>
+                <p class="small-note">Type directly in the editor. Insert inventory references, interactive tables, and photos right into the notebook narrative.</p>
+            </div>
+        </div>
+        <div class="notebook-editor-shell">
+            <script type="application/json" data-inventory-options>@Html.Raw(JsonSerializer.Serialize(Model.InventoryLookupOptions))</script>
+            <script type="application/json" data-notebook-options>@Html.Raw(JsonSerializer.Serialize(Model.NotebookLookupOptions))</script>
+            <div class="notebook-editor-toolbar" contenteditable="false">
+                <button type="button" class="button secondary" data-insert-inventory>Inventory</button>
+                <button type="button" class="button secondary" data-insert-record-link>Notebook link</button>
+                <button type="button" class="button secondary" data-insert-table>Table</button>
+                <button type="button" class="button secondary" data-insert-equation>Equation</button>
+                <button type="button" class="button secondary" data-insert-photo>Photo</button>
+                <a class="button secondary" asp-controller="Inventory" asp-action="Scan" target="_blank" rel="noreferrer">Scan QR code</a>
+                <input type="file" accept="image/*" data-photo-input hidden />
+            </div>
+            <div class="inventory-search-popover" data-inventory-search hidden contenteditable="false">
+                <div class="inventory-search-controls">
+                    <input type="search" placeholder="Search inventory by code, name, or link" data-inventory-search-input autocomplete="off" />
+                    <input type="number" step="0.1" min="0" placeholder="Hours (optional)" data-inventory-hours />
+                    <button type="button" class="button ghost" data-close-inventory-search>Close</button>
+                </div>
+                <div class="inventory-search-results" data-inventory-search-results></div>
+            </div>
+            <div class="inventory-search-popover" data-record-search hidden contenteditable="false">
+                <div class="inventory-search-controls record-search-controls">
+                    <input type="search" placeholder="Search notebook entries by code or title" data-record-search-input autocomplete="off" />
+                    <button type="button" class="button ghost" data-close-record-search>Close</button>
+                </div>
+                <div class="inventory-search-results" data-record-search-results></div>
+            </div>
+            <div class="inventory-search-popover" data-equation-editor hidden contenteditable="false">
+                <div class="equation-editor-controls">
+                    <input type="text" placeholder="Equation, e.g. 1/x, a*b, x^2 + y^2 = z^2, or CO_2" data-equation-input autocomplete="off" />
+                    <button type="button" class="button secondary" data-insert-equation-confirm>Insert equation</button>
+                    <button type="button" class="button ghost" data-close-equation-editor>Close</button>
+                </div>
+                <p class="small-note">Supports Office-style linear shortcuts like <code>1/x</code>, <code>a/(b+c)</code>, <code>a*b</code>, <code>x^2</code>, <code>x_i</code>, <code>CO_2</code>, and <code>sqrt(x)</code>.</p>
+                <p class="small-note">You can also paste Excel or Word tables directly into the notebook to create a new interactive table block.</p>
+            </div>
+            <div class="notebook-table-context" data-table-context hidden>
+                <button type="button" data-table-action="row-above">Insert Row Above</button>
+                <button type="button" data-table-action="row-below">Insert Row Below</button>
+                <button type="button" data-table-action="column-left">Insert Column Left</button>
+                <button type="button" data-table-action="column-right">Insert Column Right</button>
+                <button type="button" data-table-action="clear-cells">Clear Selection</button>
+                <button type="button" data-table-action="delete-rows">Delete Selected Rows</button>
+                <button type="button" data-table-action="delete-columns">Delete Selected Columns</button>
+                <button type="button" data-table-action="delete-table">Delete Table</button>
+            </div>
+            <div class="notebook-rich-editor"
+                 data-rich-editor
+                 contenteditable="true"
+                 spellcheck="true">@Html.Raw(string.IsNullOrWhiteSpace(Model.RichTextContent) ? "<p><br></p>" : Model.RichTextContent)</div>
+        </div>
+    </section>
+
+    <section class="panel form-panel" data-flowchart-editor data-flowchart-source='@Model.FlowchartJson'>
+        <div class="panel-header"><h2>Flowchart block</h2><div class="button-group"><button type="button" class="button secondary" data-add-node>Add node</button><button type="button" class="button ghost" data-add-edge>Add edge</button></div></div>
+        <div class="flowchart-workspace">
+            <div class="flowchart-canvas" data-flowchart-canvas></div>
+            <div class="flowchart-sidebar">
+                <p>Each node is draggable. Use "Add edge" to create links between the last two nodes.</p>
+                <label asp-for="FlowchartPreviewPath">Preview image path (optional)</label>
+                <input asp-for="FlowchartPreviewPath" />
+            </div>
+        </div>
+    </section>
+
+    <section class="panel form-panel">
+        <h2>E-signature</h2>
+        <label asp-for="SignatureStatement">E-signature statement</label>
+        <input asp-for="SignatureStatement" />
+    </section>
+
+    <div class="editor-actions">
+        <button type="submit" class="button primary">Save record</button>
+    </div>
+</form>

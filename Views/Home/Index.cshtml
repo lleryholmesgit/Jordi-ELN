@@ -1,0 +1,69 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<section class="hero-panel">
+    <div>
+        <p class="eyebrow">Internal Laboratory Workspace</p>
+        <h1>Electronic lab notebook dashboard</h1>
+        <p class="lede">Track experiment records, manage inventory, review submissions, and prepare QR-based instrument lookup for web and iOS clients.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button primary" asp-controller="Records" asp-action="Create">New record</a>
+        <a class="button secondary" asp-controller="Inventory" asp-action="Scan">Scan instrument QR</a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card"><span>Draft</span><strong>@Model.DraftCount</strong></article>
+    <article class="stat-card"><span>Submitted</span><strong>@Model.SubmittedCount</strong></article>
+    <article class="stat-card"><span>Approved</span><strong>@Model.ApprovedCount</strong></article>
+    <article class="stat-card"><span>Rejected</span><strong>@Model.RejectedCount</strong></article>
+</section>
+
+<section class="panel-grid">
+    <article class="panel">
+        <div class="panel-header"><h2>Recent records</h2><a asp-controller="Records" asp-action="Index">View all</a></div>
+        <ul class="entity-list">
+            @foreach (var item in Model.RecentRecords)
+            {
+                <li>
+                    <a asp-controller="Records" asp-action="Details" asp-route-id="@item.Id">@item.Title</a>
+                    <span>@item.ExperimentCode</span>
+                    <strong class="status @item.Status.ToString().ToLowerInvariant()">@item.Status</strong>
+                </li>
+            }
+        </ul>
+    </article>
+    <article class="panel">
+        <div class="panel-header"><h2>Recent inventory</h2><a asp-controller="Inventory" asp-action="Index">View all</a></div>
+        <ul class="entity-list">
+            @foreach (var item in Model.RecentInstruments)
+            {
+                <li>
+                    <a asp-controller="Inventory" asp-action="Details" asp-route-id="@item.Id">@item.Code</a>
+                    <span>@item.Name</span>
+                    <strong>@item.Location</strong>
+                </li>
+            }
+        </ul>
+    </article>
+    <article class="panel wide">
+        <div class="panel-header"><h2>Audit trail</h2></div>
+        <table class="table compact">
+            <thead><tr><th>Time</th><th>Action</th><th>Entity</th><th>Client</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.RecentAuditLogs)
+            {
+                <tr>
+                    <td>@item.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@item.ActionType</td>
+                    <td>@item.EntityType #@item.EntityId</td>
+                    <td>@item.SourceClient</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </article>
+</section>

@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "QR scan";
+}
+
+<section class="page-header">
+    <p class="eyebrow">Mobile Workflow</p>
+    <h1>Resolve an instrument QR code</h1>
+    <p>This page supports both browser camera scanning and manual payload entry for testing.</p>
+</section>
+
+@if (TempData["ScanError"] is string scanError)
+{
+    <div class="validation">@scanError</div>
+}
+
+<section class="details-grid">
+    <article class="panel">
+        <h2>Browser scan</h2>
+        <video data-qr-video playsinline muted></video>
+        <p class="small-note">If the browser supports the Barcode Detector API, the camera can scan directly in this page.</p>
+        <button type="button" class="button secondary" data-start-qr-scan>Start camera scan</button>
+    </article>
+    <article class="panel">
+        <h2>Manual QR payload</h2>
+        <form asp-action="ResolveScan" method="post">
+            @Html.AntiForgeryToken()
+            <label for="qrPayload">QR payload</label>
+            <textarea id="qrPayload" name="qrPayload" rows="6" data-qr-payload></textarea>
+            <button type="submit" class="button primary">Resolve QR</button>
+        </form>
+        <p class="small-note">The same payload can be sent to <code>/api/inventory/resolve-qr</code> by an iOS app.</p>
+    </article>
+</section>

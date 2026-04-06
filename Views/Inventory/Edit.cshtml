@@ -1,0 +1,64 @@
+@model InstrumentEditorViewModel
+@{
+    var itemTitle = Model.ItemType == InventoryItemType.Chemical ? "chemical" : "instrument";
+    ViewData["Title"] = Model.Id.HasValue ? $"Edit {itemTitle}" : $"New {itemTitle}";
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Inventory</p>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+    <div class="button-group">
+        @if (Model.Id.HasValue)
+        {
+            <a class="button secondary" asp-action="Details" asp-route-id="@Model.Id">Back to details</a>
+        }
+    </div>
+</section>
+
+<form asp-action="Save" method="post" class="editor-layout">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <div asp-validation-summary="All" class="validation"></div>
+    <section class="panel form-panel">
+        <div class="form-grid two-col">
+            <div><label asp-for="ItemType">Item type</label><select asp-for="ItemType" asp-items="Html.GetEnumSelectList<InventoryItemType>()"></select></div>
+            <div>
+                <label asp-for="Code"></label>
+                <input asp-for="Code" readonly />
+                <small>The system auto-generates a Jordi ELN inventory code.</small>
+            </div>
+            <div><label asp-for="Name"></label><input asp-for="Name" /></div>
+            <div><label asp-for="Manufacturer"></label><input asp-for="Manufacturer" /></div>
+            <div><label asp-for="Location"></label><input asp-for="Location" /></div>
+            <div><label asp-for="Status"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<InstrumentStatus>()"></select></div>
+            <div><label asp-for="Model"></label><input asp-for="Model" /></div>
+            <div><label asp-for="SerialNumber"></label><input asp-for="SerialNumber" /></div>
+            <div><label asp-for="OwnerName">Owner</label><input asp-for="OwnerName" /></div>
+            <div><label asp-for="CalibrationInfo">Calibration info</label><input asp-for="CalibrationInfo" /></div>
+            <div><label asp-for="ProductNumber">Product number</label><input asp-for="ProductNumber" /></div>
+            <div><label asp-for="CatalogNumber">Cat number</label><input asp-for="CatalogNumber" /></div>
+            <div><label asp-for="LotNumber">Lot number</label><input asp-for="LotNumber" /></div>
+            <div><label asp-for="ExpNumber">Exp number</label><input asp-for="ExpNumber" /></div>
+            <div><label asp-for="Quantity">Quantity</label><input asp-for="Quantity" type="number" step="0.01" min="0" /></div>
+            <div><label asp-for="Unit">Unit</label><input asp-for="Unit" /></div>
+            <div><label asp-for="OpenedOn">Opened on</label><input asp-for="OpenedOn" /></div>
+            <div><label asp-for="ExpiresOn">Expiry date</label><input asp-for="ExpiresOn" /></div>
+        </div>
+        <label asp-for="Notes"></label>
+        <textarea asp-for="Notes" rows="6"></textarea>
+        <div class="button-group">
+            <button type="submit" class="button primary">Save inventory item</button>
+            <button type="submit" class="button secondary" formaction="@Url.Action("GenerateQrCode", "Inventory")">Generate QR code</button>
+        </div>
+    </section>
+
+    <section class="panel form-panel">
+        <div class="panel-header"><h2>QR identity</h2></div>
+        <p>The QR code is generated from the auto-created Jordi ELN item code.</p>
+        <div class="qr-card">@Html.Raw(Model.QrCodeSvg)</div>
+        <label asp-for="QrCodeToken">QR payload</label>
+        <textarea asp-for="QrCodeToken" rows="4" readonly></textarea>
+    </section>
+</form>

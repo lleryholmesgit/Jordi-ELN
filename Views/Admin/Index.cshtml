@@ -1,0 +1,69 @@
+﻿@model AdminIndexViewModel
+@{
+    ViewData["Title"] = "Admin";
+}
+
+<section class="page-header">
+    <p class="eyebrow">Administration</p>
+    <h1>Admin overview</h1>
+    <p>Review users, adjust role assignments, and inspect available record templates.</p>
+</section>
+
+@if (TempData["AdminMessage"] is string adminMessage)
+{
+    <section class="panel form-panel">@adminMessage</section>
+}
+
+@if (TempData["AdminError"] is string adminError)
+{
+    <section class="panel form-panel validation">@adminError</section>
+}
+
+<section class="details-grid">
+    <article class="panel">
+        <h2>Users</h2>
+        <table class="table compact">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Display name</th>
+                    <th>Role controls</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.DisplayName</td>
+                    <td>
+                        <form asp-action="UpdateRoles" method="post" class="inline-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@user.Id" />
+                            <input type="hidden" name="isAdmin" value="false" />
+                            <input type="hidden" name="isResearcher" value="false" />
+                            <input type="hidden" name="isReviewer" value="false" />
+                            <label class="checkbox-row"><input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : null) /> Admin</label>
+                            <label class="checkbox-row"><input type="checkbox" name="isResearcher" value="true" @(user.IsResearcher ? "checked" : null) /> Researcher</label>
+                            <label class="checkbox-row"><input type="checkbox" name="isReviewer" value="true" @(user.IsReviewer ? "checked" : null) /> Reviewer</label>
+                            <button type="submit" class="button secondary">Save roles</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </article>
+    <article class="panel">
+        <h2>Record templates</h2>
+        <ul class="entity-list">
+            @foreach (var template in Model.Templates)
+            {
+                <li>
+                    <span>@template.Name</span>
+                    <span>@template.Description</span>
+                </li>
+            }
+        </ul>
+    </article>
+</section>

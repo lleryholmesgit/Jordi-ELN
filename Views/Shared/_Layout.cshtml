@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Jordi ELN</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" asp-controller="Inventory" asp-action="Index">Jordi ELN</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <nav class="nav-list">
+                    <a asp-controller="Records" asp-action="Index">Records</a>
+                    <a asp-controller="Inventory" asp-action="Index">Inventory</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index">Admin</a>
+                    }
+                </nav>
+                <div class="sidebar-footer">
+                    <div class="user-chip">
+                        <span class="label">Signed in</span>
+                        <strong>@User.Identity?.Name</strong>
+                    </div>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="button ghost">Sign out</button>
+                    </form>
+                </div>
+            }
+        </aside>
+        <main class="content">
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/js/record-editor.js" asp-append-version="true"></script>
+    <script src="~/js/inventory-layout.js" asp-append-version="true"></script>
+    <script src="~/js/qr-scan.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

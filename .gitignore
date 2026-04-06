@@ -1,0 +1,20 @@
+# Ignore build outputs and local database files
+bin/
+obj/
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+.codex-build*/
+.codex-playwright/
+.dotnet/
+.dotnet-cli/
+.dotnet_cli/
+.playwright-cli/
+.codex-*
+.cookie-*
+.*trail*.txt
+*.log
+*.html
+Things to do.txt
