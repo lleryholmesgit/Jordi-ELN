@@ -1,4 +1,4 @@
-# Electronic Lab Notebook
+# Jordi ELN
 
 An ASP.NET Core full-stack starter for an internal electronic lab notebook with English-only UI and contracts.
 
