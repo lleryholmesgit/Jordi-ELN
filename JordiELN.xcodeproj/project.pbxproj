@@ -1,0 +1,456 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000001 /* JordiELNApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* JordiELNApp.swift */; };
+		A00000000000000000000002 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000002 /* AppRootView.swift */; };
+		A00000000000000000000003 /* InventoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* InventoryItem.swift */; };
+		A00000000000000000000004 /* ELNEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000004 /* ELNEntry.swift */; };
+		A00000000000000000000005 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000005 /* AppStore.swift */; };
+		A00000000000000000000006 /* QRPayloadParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000006 /* QRPayloadParser.swift */; };
+		A00000000000000000000007 /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000007 /* AppRoute.swift */; };
+		A00000000000000000000008 /* RouteDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000008 /* RouteDestinationView.swift */; };
+		A00000000000000000000009 /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000009 /* StatusBadge.swift */; };
+		A0000000000000000000000A /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000A /* HomeView.swift */; };
+		A0000000000000000000000B /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000B /* QRScannerView.swift */; };
+		A0000000000000000000000C /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000C /* InventoryListView.swift */; };
+		A0000000000000000000000D /* InventoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000D /* InventoryDetailView.swift */; };
+		A0000000000000000000000E /* ELNListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000E /* ELNListView.swift */; };
+		A0000000000000000000000F /* ELNDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0000000000000000000000F /* ELNDetailView.swift */; };
+		A00000000000000000000010 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000011 /* UserProfile.swift */; };
+		A00000000000000000000011 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000012 /* APIClient.swift */; };
+		A00000000000000000000012 /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000013 /* ConnectionSettingsView.swift */; };
+		A00000000000000000000013 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000014 /* LoginView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B00000000000000000000001 /* JordiELNApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JordiELNApp.swift; sourceTree = "<group>"; };
+		B00000000000000000000002 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		B00000000000000000000003 /* InventoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryItem.swift; sourceTree = "<group>"; };
+		B00000000000000000000004 /* ELNEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELNEntry.swift; sourceTree = "<group>"; };
+		B00000000000000000000005 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		B00000000000000000000006 /* QRPayloadParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRPayloadParser.swift; sourceTree = "<group>"; };
+		B00000000000000000000007 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoute.swift; sourceTree = "<group>"; };
+		B00000000000000000000008 /* RouteDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDestinationView.swift; sourceTree = "<group>"; };
+		B00000000000000000000009 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
+		B0000000000000000000000A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000B /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000C /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000D /* InventoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryDetailView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000E /* ELNListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELNListView.swift; sourceTree = "<group>"; };
+		B0000000000000000000000F /* ELNDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELNDetailView.swift; sourceTree = "<group>"; };
+		B00000000000000000000010 /* JordiELN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = JordiELN.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000011 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		B00000000000000000000012 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		B00000000000000000000013 /* ConnectionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsView.swift; sourceTree = "<group>"; };
+		B00000000000000000000014 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C00000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D00000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				D00000000000000000000002 /* JordiELN */,
+				D00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D00000000000000000000002 /* JordiELN */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000001 /* JordiELNApp.swift */,
+				B00000000000000000000002 /* AppRootView.swift */,
+				D00000000000000000000004 /* Models */,
+				D00000000000000000000005 /* Services */,
+				D00000000000000000000006 /* Features */,
+				D00000000000000000000007 /* Shared */,
+			);
+			path = JordiELN;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000010 /* JordiELN.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000003 /* InventoryItem.swift */,
+				B00000000000000000000004 /* ELNEntry.swift */,
+				B00000000000000000000011 /* UserProfile.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000005 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000005 /* AppStore.swift */,
+				B00000000000000000000012 /* APIClient.swift */,
+				B00000000000000000000006 /* QRPayloadParser.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000006 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				D0000000000000000000000C /* Auth */,
+				D00000000000000000000008 /* Home */,
+				D00000000000000000000009 /* Scanner */,
+				D0000000000000000000000A /* Inventory */,
+				D0000000000000000000000B /* ELN */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000007 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000007 /* AppRoute.swift */,
+				B00000000000000000000008 /* RouteDestinationView.swift */,
+				B00000000000000000000009 /* StatusBadge.swift */,
+				B00000000000000000000013 /* ConnectionSettingsView.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000008 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000000A /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000009 /* Scanner */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000000B /* QRScannerView.swift */,
+			);
+			path = Scanner;
+			sourceTree = "<group>";
+		};
+		D0000000000000000000000A /* Inventory */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000000C /* InventoryListView.swift */,
+				B0000000000000000000000D /* InventoryDetailView.swift */,
+			);
+			path = Inventory;
+			sourceTree = "<group>";
+		};
+		D0000000000000000000000B /* ELN */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000000E /* ELNListView.swift */,
+				B0000000000000000000000F /* ELNDetailView.swift */,
+			);
+			path = ELN;
+			sourceTree = "<group>";
+		};
+		D0000000000000000000000C /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				B00000000000000000000014 /* LoginView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E00000000000000000000001 /* JordiELN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00000000000000000000002 /* Build configuration list for PBXNativeTarget "JordiELN" */;
+			buildPhases = (
+				C00000000000000000000002 /* Sources */,
+				C00000000000000000000001 /* Frameworks */,
+				C00000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = JordiELN;
+			productName = JordiELN;
+			productReference = B00000000000000000000010 /* JordiELN.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E00000000000000000000002 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					E00000000000000000000001 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+				};
+			};
+			buildConfigurationList = F00000000000000000000001 /* Build configuration list for PBXProject "JordiELN" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D00000000000000000000001;
+			productRefGroup = D00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E00000000000000000000001 /* JordiELN */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C00000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000001 /* JordiELNApp.swift in Sources */,
+				A00000000000000000000002 /* AppRootView.swift in Sources */,
+				A00000000000000000000003 /* InventoryItem.swift in Sources */,
+				A00000000000000000000004 /* ELNEntry.swift in Sources */,
+				A00000000000000000000005 /* AppStore.swift in Sources */,
+				A00000000000000000000006 /* QRPayloadParser.swift in Sources */,
+				A00000000000000000000007 /* AppRoute.swift in Sources */,
+				A00000000000000000000008 /* RouteDestinationView.swift in Sources */,
+				A00000000000000000000009 /* StatusBadge.swift in Sources */,
+				A0000000000000000000000A /* HomeView.swift in Sources */,
+				A0000000000000000000000B /* QRScannerView.swift in Sources */,
+				A0000000000000000000000C /* InventoryListView.swift in Sources */,
+				A0000000000000000000000D /* InventoryDetailView.swift in Sources */,
+				A0000000000000000000000E /* ELNListView.swift in Sources */,
+				A0000000000000000000000F /* ELNDetailView.swift in Sources */,
+				A00000000000000000000010 /* UserProfile.swift in Sources */,
+				A00000000000000000000011 /* APIClient.swift in Sources */,
+				A00000000000000000000012 /* ConnectionSettingsView.swift in Sources */,
+				A00000000000000000000013 /* LoginView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+			};
+			name = Debug;
+		};
+		F00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		F00000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Jordi ELN";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan inventory QR codes to open item details.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is not used by this app.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jordi.eln.mobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F00000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Jordi ELN";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan inventory QR codes to open item details.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is not used by this app.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jordi.eln.mobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F00000000000000000000001 /* Build configuration list for PBXProject "JordiELN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00000000000000000000003 /* Debug */,
+				F00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F00000000000000000000002 /* Build configuration list for PBXNativeTarget "JordiELN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F00000000000000000000005 /* Debug */,
+				F00000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E00000000000000000000002 /* Project object */;
+}

@@ -18,3 +18,15 @@ App_Data/
 *.log
 *.html
 Things to do.txt
+.DS_Store
+.build/
+DerivedData/
+.tools/
+.tmp-*
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+Server/bin/
+Server/obj/
+Server/App_Data/
+Server/*.db
