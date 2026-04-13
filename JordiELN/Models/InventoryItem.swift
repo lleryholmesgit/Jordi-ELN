@@ -3,6 +3,9 @@ import Foundation
 enum InventoryItemType: Int, Hashable, CaseIterable, Codable {
     case instrument = 0
     case chemical = 1
+    case extract = 2
+    case consumable = 3
+    case officeSupply = 4
 
     var title: String {
         switch self {
@@ -10,6 +13,12 @@ enum InventoryItemType: Int, Hashable, CaseIterable, Codable {
             return "Instrument"
         case .chemical:
             return "Chemical"
+        case .extract:
+            return "Extract"
+        case .consumable:
+            return "Consumable"
+        case .officeSupply:
+            return "Office Supply"
         }
     }
 
@@ -27,6 +36,12 @@ enum InventoryItemType: Int, Hashable, CaseIterable, Codable {
             self = .instrument
         case "chemical":
             self = .chemical
+        case "extract":
+            self = .extract
+        case "consumable":
+            self = .consumable
+        case "officesupply", "office supply":
+            self = .officeSupply
         default:
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported inventory item type: \(title)")
         }
@@ -80,6 +95,7 @@ struct InventoryItem: Identifiable, Hashable, Codable {
     let manufacturer: String
     let serialNumber: String
     let location: String
+    let storageLocationId: Int?
     let status: InventoryStatus
     let ownerName: String
     let calibrationInfo: String
@@ -105,6 +121,7 @@ struct InventoryItem: Identifiable, Hashable, Codable {
         case manufacturer
         case serialNumber
         case location
+        case storageLocationId
         case status
         case ownerName
         case calibrationInfo
@@ -130,6 +147,7 @@ struct InventoryItem: Identifiable, Hashable, Codable {
         manufacturer: String,
         serialNumber: String,
         location: String,
+        storageLocationId: Int?,
         status: InventoryStatus,
         ownerName: String,
         calibrationInfo: String,
@@ -154,6 +172,7 @@ struct InventoryItem: Identifiable, Hashable, Codable {
         self.manufacturer = manufacturer
         self.serialNumber = serialNumber
         self.location = location
+        self.storageLocationId = storageLocationId
         self.status = status
         self.ownerName = ownerName
         self.calibrationInfo = calibrationInfo
@@ -181,6 +200,7 @@ struct InventoryItem: Identifiable, Hashable, Codable {
         manufacturer = try container.decodeIfPresent(String.self, forKey: .manufacturer) ?? ""
         serialNumber = try container.decodeIfPresent(String.self, forKey: .serialNumber) ?? ""
         location = try container.decodeIfPresent(String.self, forKey: .location) ?? ""
+        storageLocationId = try container.decodeIfPresent(Int.self, forKey: .storageLocationId)
         status = try container.decode(InventoryStatus.self, forKey: .status)
         ownerName = try container.decodeIfPresent(String.self, forKey: .ownerName) ?? ""
         calibrationInfo = try container.decodeIfPresent(String.self, forKey: .calibrationInfo) ?? ""
@@ -233,6 +253,11 @@ struct InventoryItem: Identifiable, Hashable, Codable {
                 return "\(NSDecimalNumber(decimal: quantity).stringValue) \(unit) • \(status.title)".trimmingCharacters(in: .whitespaces)
             }
             return unit.isEmpty ? status.title : "\(unit) • \(status.title)"
+        case .extract, .consumable, .officeSupply:
+            if let quantity {
+                return "\(NSDecimalNumber(decimal: quantity).stringValue) \(unit) • \(status.title)".trimmingCharacters(in: .whitespaces)
+            }
+            return manufacturer.isEmpty ? status.title : "\(manufacturer) • \(status.title)"
         }
     }
 
@@ -252,6 +277,7 @@ extension InventoryItem {
         name: String,
         model: String,
         location: String,
+        storageLocationId: Int?,
         status: InventoryStatus
     ) -> InventoryItem {
         InventoryItem(
@@ -263,6 +289,7 @@ extension InventoryItem {
             manufacturer: "",
             serialNumber: "",
             location: location,
+            storageLocationId: storageLocationId,
             status: status,
             ownerName: "",
             calibrationInfo: "",

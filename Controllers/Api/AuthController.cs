@@ -1,4 +1,5 @@
 using ElectronicLabNotebook.Models;
+using ElectronicLabNotebook.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,16 @@ public sealed class AuthController : ApiControllerBase
             return Unauthorized(new { message = "Invalid email or password." });
         }
 
+        var roles = await _userManager.GetRolesAsync(user);
+        if (!Roles.HasAssignedRole(roles))
+        {
+            await _signInManager.SignOutAsync();
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Your account is pending admin approval before it can access ELN or inventory data."
+            });
+        }
+
         return Ok(await BuildProfileAsync(user));
     }
 
@@ -60,12 +71,14 @@ public sealed class AuthController : ApiControllerBase
 
     private async Task<object> BuildProfileAsync(ApplicationUser user)
     {
+        var roles = await _userManager.GetRolesAsync(user);
         return new
         {
             user.Id,
             user.Email,
             user.DisplayName,
-            Roles = await _userManager.GetRolesAsync(user),
+            Roles = roles,
+            HasAssignedRole = Roles.HasAssignedRole(roles),
             MobileAuthPlanned = true
         };
     }
@@ -75,5 +88,9 @@ public sealed class AuthController : ApiControllerBase
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; }
+        public string DeviceType { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
     }
 }

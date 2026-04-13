@@ -90,12 +90,14 @@ public sealed class InventoryController : Controller
     }
 
     [Authorize(Roles = Roles.Admin)]
+    [WindowsWriteAccess]
     public IActionResult Create(InventoryItemType itemType = InventoryItemType.Instrument)
     {
         return View("Edit", BuildNewInventoryModel(itemType));
     }
 
     [Authorize(Roles = Roles.Admin)]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var inventoryItem = await _instrumentService.GetAsync(id, cancellationToken);
@@ -105,6 +107,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public IActionResult GenerateQrCode(InstrumentEditorViewModel input)
     {
         input.Code = GenerateInventoryCode(input.ItemType);
@@ -116,6 +119,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Save(InstrumentEditorViewModel input, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(input.Code))
@@ -146,6 +150,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -162,6 +167,7 @@ public sealed class InventoryController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> SaveLayout(List<InventoryColumnPreferenceInput> columns, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User);
@@ -193,6 +199,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> ImportSpreadsheet(IFormFile? spreadsheet, CancellationToken cancellationToken)
     {
         if (spreadsheet is null || spreadsheet.Length == 0)
@@ -280,6 +287,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> RefreshQr(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;

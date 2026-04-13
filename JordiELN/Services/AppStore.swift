@@ -36,6 +36,46 @@ final class AppStore: ObservableObject {
         authProfile != nil
     }
 
+    var currentDeviceKind: MobileDeviceKind {
+        MobileDeviceKind.current
+    }
+
+    var isPhoneClient: Bool {
+        currentDeviceKind == .phone
+    }
+
+    var isTabletClient: Bool {
+        currentDeviceKind == .tablet
+    }
+
+    var canUseFullWorkspace: Bool {
+        isTabletClient && isAuthenticated && (authProfile?.isApprovedForSignIn ?? false)
+    }
+
+    var canManageInventoryOnCurrentDevice: Bool {
+        isTabletClient && (authProfile?.canManageInventory ?? false)
+    }
+
+    var canCreateOrEditELNOnCurrentDevice: Bool {
+        if isPhoneClient {
+            return false
+        }
+
+        return authProfile?.canCreateOrEditELN ?? false
+    }
+
+    var canReviewELNOnCurrentDevice: Bool {
+        if isPhoneClient {
+            return false
+        }
+
+        return authProfile?.canReviewELN ?? false
+    }
+
+    var canUsePhoneScanActions: Bool {
+        isPhoneClient && isAuthenticated
+    }
+
     var hasSavedConnection: Bool {
         normalizedBaseURL() != nil
     }
@@ -259,31 +299,164 @@ final class AppStore: ObservableObject {
     }
 
     func resolveInventoryPayload(_ payload: String) async throws -> InventoryItem {
+        let resolution = try await resolveScanPayload(payload)
+        switch resolution {
+        case .inventory(let resolved):
+            return resolved.item
+        case .storageLocation:
+            throw APIClientError.serverMessage("This QR code resolves to a storage location, not an inventory item.")
+        }
+    }
+
+    func resolveScanPayload(_ payload: String) async throws -> ScanResolution {
         guard let baseURL = normalizedBaseURL() else {
             throw APIClientError.missingConnectionConfiguration
         }
 
         let resolved = try await apiClient.resolveQr(baseURL: baseURL, payload: payload)
-        let summaryItem = InventoryItem.resolvedSummary(
-            id: resolved.instrument.id,
-            code: resolved.instrument.code,
-            name: resolved.instrument.name,
-            model: resolved.instrument.model,
-            location: resolved.instrument.location,
-            status: resolved.instrument.status
-        )
+        switch resolved.type {
+        case "storage-location":
+            guard let location = resolved.storageLocation else {
+                throw APIClientError.invalidResponse
+            }
+            return .storageLocation(location)
+        default:
+            guard let instrument = resolved.instrument else {
+                throw APIClientError.invalidResponse
+            }
 
-        upsertInventoryItem(summaryItem)
+            let summaryItem = InventoryItem.resolvedSummary(
+                id: instrument.id,
+                code: instrument.code,
+                name: instrument.name,
+                model: instrument.model,
+                location: instrument.location,
+                storageLocationId: instrument.storageLocationId,
+                status: instrument.status
+            )
 
-        do {
-            return try await refreshInventoryItem(id: resolved.instrument.id)
-        } catch APIClientError.missingCredentials {
-            return summaryItem
-        } catch APIClientError.unauthorized {
-            return summaryItem
-        } catch {
-            return summaryItem
+            upsertInventoryItem(summaryItem)
+
+            let fullItem: InventoryItem
+            do {
+                fullItem = try await refreshInventoryItem(id: instrument.id)
+            } catch APIClientError.missingCredentials {
+                fullItem = summaryItem
+            } catch APIClientError.unauthorized {
+                fullItem = summaryItem
+            } catch {
+                fullItem = summaryItem
+            }
+
+            return .inventory(
+                ResolvedInventoryItem(
+                    summary: instrument,
+                    item: fullItem
+                )
+            )
         }
+    }
+
+    func checkInInventoryItem(id: Int) async throws {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        try await apiClient.checkInInventoryItem(baseURL: baseURL, id: id)
+    }
+
+    func checkOutInventoryItem(id: Int) async throws {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        try await apiClient.checkOutInventoryItem(baseURL: baseURL, id: id)
+    }
+
+    func createELNEntry(request: RecordSaveRequestPayload) async throws -> ELNEntry {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        let entry = try await apiClient.createRecord(baseURL: baseURL, request: request)
+        upsertELNEntry(entry)
+        upsertInventoryItems(from: [entry])
+        return entry
+    }
+
+    func updateELNEntry(id: Int, request: RecordSaveRequestPayload) async throws -> ELNEntry {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        let entry = try await apiClient.updateRecord(baseURL: baseURL, id: id, request: request)
+        upsertELNEntry(entry)
+        upsertInventoryItems(from: [entry])
+        return entry
+    }
+
+    func submitELNEntry(id: Int) async throws {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        try await apiClient.submitRecord(baseURL: baseURL, id: id)
+        _ = try await refreshELNEntry(id: id)
+    }
+
+    func approveELNEntry(id: Int, comment: String) async throws {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        try await apiClient.approveRecord(baseURL: baseURL, id: id, comment: comment)
+        _ = try await refreshELNEntry(id: id)
+    }
+
+    func rejectELNEntry(id: Int, comment: String) async throws {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        try await apiClient.rejectRecord(baseURL: baseURL, id: id, comment: comment)
+        _ = try await refreshELNEntry(id: id)
+    }
+
+    func createInventoryItem(request: InventorySaveRequestPayload) async throws -> InventoryItem {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        let item = try await apiClient.createInventoryItem(baseURL: baseURL, request: request)
+        upsertInventoryItem(item)
+        return item
+    }
+
+    func updateInventoryItem(id: Int, request: InventorySaveRequestPayload) async throws -> InventoryItem {
+        guard let baseURL = normalizedBaseURL() else {
+            throw APIClientError.missingConnectionConfiguration
+        }
+
+        try await ensureAuthenticated(for: baseURL)
+        let item = try await apiClient.updateInventoryItem(baseURL: baseURL, id: id, request: request)
+        upsertInventoryItem(item)
+        return item
+    }
+
+    func fullWorkspaceURL(path: String = "/") -> URL? {
+        guard let baseURL = normalizedBaseURL() else {
+            return nil
+        }
+
+        return URL(string: path, relativeTo: baseURL)?.absoluteURL
     }
 
     private func ensureAuthenticated(for baseURL: URL) async throws {

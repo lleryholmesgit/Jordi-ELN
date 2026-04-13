@@ -99,12 +99,14 @@ public sealed class RecordsController : Controller
     }
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         return View("Edit", await BuildEditorViewModelAsync(null, cancellationToken));
     }
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var record = await _recordService.GetAsync(id, cancellationToken);
@@ -119,6 +121,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Save(RecordEditorViewModel model, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -159,6 +162,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Submit(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -174,6 +178,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Reviewer)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Approve(int id, string? comment, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -189,6 +194,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Reviewer)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Reject(int id, string? comment, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -204,6 +210,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;

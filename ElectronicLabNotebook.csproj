@@ -17,8 +17,16 @@
 
   <ItemGroup>
     <Compile Remove="Tests\**\*.cs" />
+    <Compile Remove="Server\**\*.cs" />
+    <Compile Remove="Server/**/*.cs" />
     <Content Remove="Tests\**\*" />
+    <Content Remove="Server\**\*" />
+    <Content Remove="Server/**/*" />
     <EmbeddedResource Remove="Tests\**\*" />
+    <EmbeddedResource Remove="Server\**\*" />
+    <EmbeddedResource Remove="Server/**/*" />
     <None Remove="Tests\**\*" />
+    <None Remove="Server\**\*" />
+    <None Remove="Server/**/*" />
   </ItemGroup>
 </Project>

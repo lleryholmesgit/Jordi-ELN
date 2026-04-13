@@ -45,9 +45,22 @@ struct InventoryListView: View {
                 }
             } else {
                 Section {
-                    Text("Inventory now loads from `/api/inventory`. Mobile remains read-only even after sign-in.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if store.isTabletClient {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Inventory is synced from `/api/inventory`. iPad can use the same role-based workspace access as the Windows build.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            if let workspaceURL = store.fullWorkspaceURL(path: "/Inventory") {
+                                Link("Open full inventory workspace", destination: workspaceURL)
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                        }
+                    } else {
+                        Text("Inventory now loads from `/api/inventory`. iPhone stays focused on browse-and-scan workflows.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Inventory items") {

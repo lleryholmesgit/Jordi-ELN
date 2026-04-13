@@ -145,6 +145,9 @@ struct InventoryDetailView: View {
             detailRow(label: "Type", value: item.itemType.title)
             detailRow(label: "Code", value: item.code)
             detailRow(label: "Location", value: item.location)
+            if let storageLocationId = item.storageLocationId {
+                detailRow(label: "Storage location ID", value: String(storageLocationId))
+            }
             detailRow(label: "Status", value: item.status.title)
             if let createdAtUtc = item.createdAtUtc {
                 detailRow(label: "Created", value: createdAtUtc.formatted(date: .abbreviated, time: .shortened))
@@ -169,6 +172,16 @@ struct InventoryDetailView: View {
                 detailRow(label: "Cat number", value: item.catalogNumber)
                 detailRow(label: "Lot number", value: item.lotNumber)
                 detailRow(label: "Exp number", value: item.expNumber)
+                detailRow(label: "Quantity", value: item.quantityText)
+                detailRow(label: "Opened on", value: formattedDate(item.openedOn))
+                detailRow(label: "Expiry date", value: formattedDate(item.expiresOn))
+            }
+        case .extract, .consumable, .officeSupply:
+            Section("\(item.itemType.title) profile") {
+                detailRow(label: "Manufacturer", value: item.manufacturer)
+                detailRow(label: "Product number", value: item.productNumber)
+                detailRow(label: "Cat number", value: item.catalogNumber)
+                detailRow(label: "Lot number", value: item.lotNumber)
                 detailRow(label: "Quantity", value: item.quantityText)
                 detailRow(label: "Opened on", value: formattedDate(item.openedOn))
                 detailRow(label: "Expiry date", value: formattedDate(item.expiresOn))
@@ -225,6 +238,12 @@ struct InventoryDetailView: View {
             return .blue
         case .chemical:
             return .brown
+        case .extract:
+            return .teal
+        case .consumable:
+            return .orange
+        case .officeSupply:
+            return .indigo
         }
     }
 }

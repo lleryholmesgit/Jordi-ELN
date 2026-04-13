@@ -44,9 +44,22 @@ struct ELNListView: View {
                 }
             } else {
                 Section {
-                    Label("ELN is now backed by `/api/records` and remains read-only on mobile.", systemImage: "lock.doc.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if store.isTabletClient {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("ELN is backed by `/api/records`. iPad can use role-based workspace access alongside the native browser.", systemImage: "rectangle.on.rectangle")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+
+                            if let workspaceURL = store.fullWorkspaceURL(path: "/Records") {
+                                Link("Open full ELN workspace", destination: workspaceURL)
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                        }
+                    } else {
+                        Label("ELN is backed by `/api/records` and stays streamlined for iPhone viewing.", systemImage: "lock.doc.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("ELN entries") {

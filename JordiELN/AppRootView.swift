@@ -22,6 +22,9 @@ struct AppRootView: View {
                             onSelectInventory: { inventoryID in
                                 homePath.append(.inventory(inventoryID))
                             },
+                            onSelectELN: { elnID in
+                                homePath.append(.eln(elnID))
+                            },
                             onBrowseInventory: {
                                 selectedTab = .inventory
                             },

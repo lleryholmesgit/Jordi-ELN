@@ -75,7 +75,8 @@ public sealed class InventoryApiController : ApiControllerBase
         return Ok(new
         {
             success = true,
-            message = "Instrument resolved.",
+            message = "Inventory item resolved.",
+            type = "inventory-item",
             instrument = new
             {
                 instrument.Id,
@@ -83,9 +84,93 @@ public sealed class InventoryApiController : ApiControllerBase
                 instrument.Name,
                 instrument.Model,
                 instrument.Location,
-                instrument.Status
+                storageLocationId = (int?)null,
+                instrument.Status,
+                actions = new
+                {
+                    viewPath = Url.Action("Details", "Inventory", new { id = instrument.Id }),
+                    scanOptionsPath = Url.Action("Scan", "Inventory"),
+                    addToElnPath = Url.Action("Create", "Records")
+                }
             }
         });
+    }
+
+    [HttpPost("{id:int}/check-in")]
+    public async Task<IActionResult> CheckIn(int id, CancellationToken cancellationToken)
+    {
+        var instrument = await _instrumentService.GetAsync(id, cancellationToken);
+        if (instrument is null)
+        {
+            return NotFound(new { message = "Inventory item not found." });
+        }
+
+        var actorUserId = GetActorUserId(_userManager);
+        var updated = await _instrumentService.UpdateAsync(
+            id,
+            ToSaveRequest(instrument, InstrumentStatus.Active),
+            actorUserId,
+            ResolveSourceClient(),
+            cancellationToken
+        );
+
+        return updated is null
+            ? NotFound(new { message = "Inventory item not found." })
+            : Ok(new { message = "Inventory item checked in." });
+    }
+
+    [HttpPost("{id:int}/check-out")]
+    public async Task<IActionResult> CheckOut(int id, CancellationToken cancellationToken)
+    {
+        var instrument = await _instrumentService.GetAsync(id, cancellationToken);
+        if (instrument is null)
+        {
+            return NotFound(new { message = "Inventory item not found." });
+        }
+
+        var actorUserId = GetActorUserId(_userManager);
+        var updated = await _instrumentService.UpdateAsync(
+            id,
+            ToSaveRequest(instrument, InstrumentStatus.Maintenance),
+            actorUserId,
+            ResolveSourceClient(),
+            cancellationToken
+        );
+
+        return updated is null
+            ? NotFound(new { message = "Inventory item not found." })
+            : Ok(new { message = "Inventory item checked out." });
+    }
+
+    private string ResolveSourceClient()
+    {
+        return ClientDeviceDetector.IsAppleMobileClient(Request) ? "iOS" : "Api";
+    }
+
+    private static InstrumentSaveRequest ToSaveRequest(Instrument instrument, InstrumentStatus status)
+    {
+        return new InstrumentSaveRequest
+        {
+            ItemType = instrument.ItemType,
+            Code = instrument.Code,
+            Name = instrument.Name,
+            Model = instrument.Model,
+            Manufacturer = instrument.Manufacturer,
+            SerialNumber = instrument.SerialNumber,
+            Location = instrument.Location,
+            Status = status,
+            OwnerName = instrument.OwnerName,
+            CalibrationInfo = instrument.CalibrationInfo,
+            ProductNumber = instrument.ProductNumber,
+            CatalogNumber = instrument.CatalogNumber,
+            LotNumber = instrument.LotNumber,
+            ExpNumber = instrument.ExpNumber,
+            Quantity = instrument.Quantity,
+            Unit = instrument.Unit,
+            OpenedOn = instrument.OpenedOn,
+            ExpiresOn = instrument.ExpiresOn,
+            Notes = instrument.Notes
+        };
     }
 
     public sealed class ResolveQrRequest

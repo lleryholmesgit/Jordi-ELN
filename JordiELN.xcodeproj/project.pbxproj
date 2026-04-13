@@ -26,6 +26,8 @@
 		A00000000000000000000011 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000012 /* APIClient.swift */; };
 		A00000000000000000000012 /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000013 /* ConnectionSettingsView.swift */; };
 		A00000000000000000000013 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000014 /* LoginView.swift */; };
+		A00000000000000000000014 /* ScanResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000015 /* ScanResolution.swift */; };
+		A00000000000000000000015 /* ScanResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000016 /* ScanResultView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +51,8 @@
 		B00000000000000000000012 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		B00000000000000000000013 /* ConnectionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsView.swift; sourceTree = "<group>"; };
 		B00000000000000000000014 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		B00000000000000000000015 /* ScanResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResolution.swift; sourceTree = "<group>"; };
+		B00000000000000000000016 /* ScanResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +101,7 @@
 				B00000000000000000000003 /* InventoryItem.swift */,
 				B00000000000000000000004 /* ELNEntry.swift */,
 				B00000000000000000000011 /* UserProfile.swift */,
+				B00000000000000000000015 /* ScanResolution.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -146,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				B0000000000000000000000B /* QRScannerView.swift */,
+				B00000000000000000000016 /* ScanResultView.swift */,
 			);
 			path = Scanner;
 			sourceTree = "<group>";
@@ -263,6 +269,8 @@
 				A00000000000000000000011 /* APIClient.swift in Sources */,
 				A00000000000000000000012 /* ConnectionSettingsView.swift in Sources */,
 				A00000000000000000000013 /* LoginView.swift in Sources */,
+				A00000000000000000000014 /* ScanResolution.swift in Sources */,
+				A00000000000000000000015 /* ScanResultView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

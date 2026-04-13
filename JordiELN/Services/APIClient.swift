@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 enum APIClientError: LocalizedError {
     case invalidBaseURL
@@ -52,7 +53,16 @@ actor APIClient {
     }
 
     func login(baseURL: URL, email: String, password: String, rememberMe: Bool = true) async throws -> UserProfile {
-        let payload = LoginRequest(email: email, password: password, rememberMe: rememberMe)
+        let deviceKind = await MainActor.run { MobileDeviceKind.current }
+        let payload = LoginRequest(
+            email: email,
+            password: password,
+            rememberMe: rememberMe,
+            deviceType: deviceKind.apiValue,
+            deviceName: deviceKind.title,
+            platform: "iOS",
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        )
         let request = try makeRequest(baseURL: baseURL, path: "/api/auth/login", method: "POST", jsonBody: payload)
         return try await send(request, as: UserProfile.self)
     }
@@ -90,6 +100,61 @@ actor APIClient {
     func fetchRecord(baseURL: URL, id: Int) async throws -> ELNEntry {
         let request = try makeRequest(baseURL: baseURL, path: "/api/records/\(id)", method: "GET")
         return try await sendWrappedObject(request, as: ELNEntry.self)
+    }
+
+    func createRecord(baseURL: URL, request payload: RecordSaveRequestPayload) async throws -> ELNEntry {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/records", method: "POST", jsonBody: payload)
+        return try await sendWrappedObject(request, as: ELNEntry.self)
+    }
+
+    func updateRecord(baseURL: URL, id: Int, request payload: RecordSaveRequestPayload) async throws -> ELNEntry {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/records/\(id)", method: "PUT", jsonBody: payload)
+        return try await sendWrappedObject(request, as: ELNEntry.self)
+    }
+
+    func submitRecord(baseURL: URL, id: Int) async throws {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/records/\(id)/submit", method: "POST")
+        let _: ServerMessageEnvelope = try await send(request, as: ServerMessageEnvelope.self)
+    }
+
+    func approveRecord(baseURL: URL, id: Int, comment: String) async throws {
+        let request = try makeRequest(
+            baseURL: baseURL,
+            path: "/api/records/\(id)/approve",
+            method: "POST",
+            jsonBody: RecordReviewRequestPayload(comment: comment)
+        )
+        let _: ServerMessageEnvelope = try await send(request, as: ServerMessageEnvelope.self)
+    }
+
+    func rejectRecord(baseURL: URL, id: Int, comment: String) async throws {
+        let request = try makeRequest(
+            baseURL: baseURL,
+            path: "/api/records/\(id)/reject",
+            method: "POST",
+            jsonBody: RecordReviewRequestPayload(comment: comment)
+        )
+        let _: ServerMessageEnvelope = try await send(request, as: ServerMessageEnvelope.self)
+    }
+
+    func createInventoryItem(baseURL: URL, request payload: InventorySaveRequestPayload) async throws -> InventoryItem {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/inventory", method: "POST", jsonBody: payload)
+        return try await send(request, as: InventoryItem.self)
+    }
+
+    func updateInventoryItem(baseURL: URL, id: Int, request payload: InventorySaveRequestPayload) async throws -> InventoryItem {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/inventory/\(id)", method: "PUT", jsonBody: payload)
+        return try await send(request, as: InventoryItem.self)
+    }
+
+    func checkInInventoryItem(baseURL: URL, id: Int) async throws {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/inventory/\(id)/check-in", method: "POST")
+        let _: ServerMessageEnvelope = try await send(request, as: ServerMessageEnvelope.self)
+    }
+
+    func checkOutInventoryItem(baseURL: URL, id: Int) async throws {
+        let request = try makeRequest(baseURL: baseURL, path: "/api/inventory/\(id)/check-out", method: "POST")
+        let _: ServerMessageEnvelope = try await send(request, as: ServerMessageEnvelope.self)
     }
 
     func clearCookies(for baseURL: URL) {
@@ -387,7 +452,7 @@ actor APIClient {
 
             return .serverUnavailable("Cannot reach `\(host)`. Make sure the ASP.NET server is running and the address is correct.")
         case .timedOut:
-            return .serverUnavailable("The server at `\(host)` timed out. Make sure `./run-app.sh` is still running.")
+            return .serverUnavailable("The server at `\(host)` timed out. Make sure the ASP.NET backend is still running and reachable from this device.")
         default:
             return .serverUnavailable(urlError.localizedDescription)
         }
@@ -398,29 +463,96 @@ private struct LoginRequest: Encodable {
     let email: String
     let password: String
     let rememberMe: Bool
+    let deviceType: String
+    let deviceName: String
+    let platform: String
+    let appVersion: String
 }
 
 struct InventoryResolveResponse: Decodable {
     let success: Bool
     let message: String
-    let instrument: ResolvedInventorySummary
-}
+    let type: String
+    let instrument: ResolvedInventorySummary?
+    let storageLocation: ResolvedStorageLocation?
 
-struct ResolvedInventorySummary: Decodable {
-    let id: Int
-    let code: String
-    let name: String
-    let model: String
-    let location: String
-    let status: InventoryStatus
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        success = try container.decode(Bool.self, forKey: .success)
+        message = try container.decodeIfPresent(String.self, forKey: .message) ?? ""
+        type = try container.decodeIfPresent(String.self, forKey: .type) ?? "inventory-item"
+        instrument = try container.decodeIfPresent(ResolvedInventorySummary.self, forKey: .instrument)
+        storageLocation = try container.decodeIfPresent(ResolvedStorageLocation.self, forKey: .storageLocation)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case success
+        case message
+        case type
+        case instrument
+        case storageLocation
+    }
 }
 
 private struct ResolveQrRequest: Encodable {
     let qrPayload: String
 }
 
+struct RecordSaveRequestPayload: Encodable {
+    let title: String
+    let experimentCode: String
+    let conductedOn: String
+    let projectName: String?
+    let principalInvestigator: String?
+    let templateId: Int?
+    let richTextContent: String?
+    let structuredDataJson: String?
+    let tableJson: String?
+    let flowchartJson: String?
+    let flowchartPreviewPath: String?
+    let signatureStatement: String?
+    let signatureDate: String?
+    let instrumentLinks: [RecordInstrumentLinkPayload]
+}
+
+struct RecordInstrumentLinkPayload: Encodable {
+    let instrumentId: Int
+    let usageHours: Decimal?
+}
+
+struct RecordReviewRequestPayload: Encodable {
+    let comment: String?
+}
+
+struct InventorySaveRequestPayload: Encodable {
+    let itemType: InventoryItemType
+    let code: String
+    let name: String
+    let model: String
+    let manufacturer: String
+    let serialNumber: String
+    let location: String
+    let storageLocationId: Int?
+    let status: InventoryStatus
+    let ownerName: String
+    let calibrationInfo: String
+    let productNumber: String
+    let catalogNumber: String
+    let lotNumber: String
+    let expNumber: String
+    let quantity: Decimal?
+    let unit: String
+    let openedOn: String?
+    let expiresOn: String?
+    let notes: String
+}
+
 private struct ServerErrorEnvelope: Decodable {
     let message: String?
+}
+
+private struct ServerMessageEnvelope: Decodable {
+    let message: String
 }
 
 private struct LogoutResponse: Decodable {
