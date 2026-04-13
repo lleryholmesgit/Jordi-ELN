@@ -112,6 +112,10 @@ public sealed class AuthController : ApiControllerBase
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; }
+        public string DeviceType { get; set; } = string.Empty;
+        public string DeviceName { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
     }
 
     public sealed class RegisterRequest

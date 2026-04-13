@@ -1,7 +1,7 @@
 @model StorageLocationEditorViewModel
 @{
     ViewData["Title"] = "Storage location details";
-    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+    bool isPhoneClient = ClientDeviceDetector.IsPhoneClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -12,7 +12,7 @@
     </div>
     <div class="button-group">
         <a class="button secondary" asp-action="Index">Back to locations</a>
-        @if (User.IsInRole("Admin") && !isIosClient)
+        @if (User.IsInRole("Admin") && !isPhoneClient)
         {
             <a class="button primary" asp-action="Edit" asp-route-id="@Model.Id">Edit location</a>
         }
@@ -49,7 +49,7 @@
                 }
             }
         </ul>
-        @if (User.IsInRole("Admin") && !isIosClient)
+        @if (User.IsInRole("Admin") && !isPhoneClient)
         {
             <section class="panel form-panel">
                 <div class="panel-header"><h3>Add inventory items</h3></div>
@@ -75,7 +75,7 @@
         <div class="qr-card">@Html.Raw(Model.QrCodeSvg)</div>
         <label>QR payload</label>
         <textarea rows="4" readonly>@Model.QrCodeToken</textarea>
-        @if (User.IsInRole("Admin") && !isIosClient)
+        @if (User.IsInRole("Admin") && !isPhoneClient)
         {
             <section class="panel form-panel">
                 <div class="panel-header"><h3>Delete storage location</h3></div>

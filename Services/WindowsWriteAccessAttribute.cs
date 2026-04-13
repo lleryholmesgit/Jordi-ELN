@@ -8,7 +8,7 @@ public sealed class WindowsWriteAccessAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuting(ActionExecutingContext context)
     {
-        if (!ClientDeviceDetector.IsIosClient(context.HttpContext.Request))
+        if (!ClientDeviceDetector.IsPhoneClient(context.HttpContext.Request))
         {
             base.OnActionExecuting(context);
             return;
@@ -16,7 +16,7 @@ public sealed class WindowsWriteAccessAttribute : ActionFilterAttribute
 
         if (context.Controller is Controller controller)
         {
-            controller.TempData["AccessDeniedMessage"] = "iOS clients are currently read-only. Please use a Windows device for editing and administrative actions.";
+            controller.TempData["AccessDeniedMessage"] = "iPhone clients are limited to scan and read-only mobile workflows. Use iPad or Windows for full editing and administrative actions.";
             context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
             return;
         }

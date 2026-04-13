@@ -127,6 +127,50 @@ public sealed class InventoryApiController : ApiControllerBase
         return NotFound(new { success = false, message = "The QR code could not be resolved." });
     }
 
+    [HttpPost("{id:int}/check-in")]
+    public async Task<IActionResult> CheckIn(int id, CancellationToken cancellationToken)
+    {
+        var instrument = await _instrumentService.GetAsync(id, cancellationToken);
+        if (instrument is null)
+        {
+            return NotFound(new { message = "Inventory item not found." });
+        }
+
+        var actorUserId = GetActorUserId(_userManager);
+        var updated = await _instrumentService.UpdateAsync(
+            id,
+            ToSaveRequest(instrument, InstrumentStatus.Active),
+            actorUserId,
+            ResolveSourceClient(),
+            cancellationToken);
+
+        return updated is null
+            ? NotFound(new { message = "Inventory item not found." })
+            : Ok(new { message = "Inventory item checked in." });
+    }
+
+    [HttpPost("{id:int}/check-out")]
+    public async Task<IActionResult> CheckOut(int id, CancellationToken cancellationToken)
+    {
+        var instrument = await _instrumentService.GetAsync(id, cancellationToken);
+        if (instrument is null)
+        {
+            return NotFound(new { message = "Inventory item not found." });
+        }
+
+        var actorUserId = GetActorUserId(_userManager);
+        var updated = await _instrumentService.UpdateAsync(
+            id,
+            ToSaveRequest(instrument, InstrumentStatus.Maintenance),
+            actorUserId,
+            ResolveSourceClient(),
+            cancellationToken);
+
+        return updated is null
+            ? NotFound(new { message = "Inventory item not found." })
+            : Ok(new { message = "Inventory item checked out." });
+    }
+
     private static object MapInventoryItem(Instrument item)
     {
         return new
@@ -153,6 +197,38 @@ public sealed class InventoryApiController : ApiControllerBase
             item.ExpiresOn,
             item.Notes,
             item.QrCodeToken
+        };
+    }
+
+    private string ResolveSourceClient()
+    {
+        return ClientDeviceDetector.IsAppleMobileClient(Request) ? "iOS" : "Api";
+    }
+
+    private static InstrumentSaveRequest ToSaveRequest(Instrument instrument, InstrumentStatus status)
+    {
+        return new InstrumentSaveRequest
+        {
+            ItemType = instrument.ItemType,
+            Code = instrument.Code,
+            Name = instrument.Name,
+            Model = instrument.Model,
+            Manufacturer = instrument.Manufacturer,
+            SerialNumber = instrument.SerialNumber,
+            Location = instrument.Location,
+            StorageLocationId = instrument.StorageLocationId,
+            Status = status,
+            OwnerName = instrument.OwnerName,
+            CalibrationInfo = instrument.CalibrationInfo,
+            ProductNumber = instrument.ProductNumber,
+            CatalogNumber = instrument.CatalogNumber,
+            LotNumber = instrument.LotNumber,
+            ExpNumber = instrument.ExpNumber,
+            Quantity = instrument.Quantity,
+            Unit = instrument.Unit,
+            OpenedOn = instrument.OpenedOn,
+            ExpiresOn = instrument.ExpiresOn,
+            Notes = instrument.Notes
         };
     }
 

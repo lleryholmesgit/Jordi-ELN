@@ -1,7 +1,7 @@
 @model InstrumentEditorViewModel
 @{
     ViewData["Title"] = "Inventory item details";
-    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+    bool isPhoneClient = ClientDeviceDetector.IsPhoneClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -10,7 +10,7 @@
         <h1>@Model.Code</h1>
         <p>@Model.ItemType · @Model.Name · @(string.IsNullOrWhiteSpace(Model.Location) ? "No storage location" : Model.Location)</p>
     </div>
-    @if (User.IsInRole("Admin") && !isIosClient)
+    @if (User.IsInRole("Admin") && !isPhoneClient)
     {
         <div class="button-group">
             <a class="button secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
@@ -87,7 +87,7 @@
         <div class="qr-card">@Html.Raw(Model.QrCodeSvg)</div>
         <label>QR payload</label>
         <textarea rows="4" readonly>@Model.QrCodeToken</textarea>
-        @if (User.IsInRole("Admin") && !isIosClient)
+        @if (User.IsInRole("Admin") && !isPhoneClient)
         {
             <form asp-action="RefreshQr" method="post" class="inline-form">
                 @Html.AntiForgeryToken()

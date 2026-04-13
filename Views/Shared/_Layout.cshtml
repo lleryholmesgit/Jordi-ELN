@@ -35,11 +35,11 @@
             }
         </aside>
         <main class="content">
-            @if (ClientDeviceDetector.IsIosClient(Context.Request))
+            @if (ClientDeviceDetector.IsPhoneClient(Context.Request))
             {
                 <section class="panel form-panel ios-readonly-banner">
-                    <strong>iOS read-only mode</strong>
-                    <span>Browsing is supported on iPhone and iPad, but editing and admin actions are available only on Windows devices.</span>
+                    <strong>iPhone limited mode</strong>
+                    <span>Browsing and scan workflows are supported on iPhone. Use iPad or Windows for full editing and administrative actions.</span>
                 </section>
             }
             @RenderBody()

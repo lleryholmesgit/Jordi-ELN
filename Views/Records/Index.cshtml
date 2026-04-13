@@ -10,7 +10,7 @@
         ?? record.CreatedByUser?.Email
         ?? record.CreatedByUser?.DisplayName
         ?? record.CreatedByUserId;
-    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+    bool isPhoneClient = ClientDeviceDetector.IsPhoneClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -18,7 +18,7 @@
         <p class="eyebrow">Experiment Records</p>
         <h1>Records</h1>
     </div>
-    @if (!isIosClient)
+    @if (!isPhoneClient)
     {
         <a class="button primary" asp-action="Create">New record</a>
     }
@@ -68,7 +68,7 @@
             <td>
                 <div class="button-group">
                     <a asp-action="Details" asp-route-id="@item.Id">Open</a>
-                    @if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Researcher")))
+                    @if (!isPhoneClient && (User.IsInRole("Admin") || User.IsInRole("Researcher")))
                     {
                         <form asp-action="Delete" method="post" class="inline-form" onsubmit="return confirm('Delete this record?');">
                             @Html.AntiForgeryToken()
