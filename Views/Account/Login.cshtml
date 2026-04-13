@@ -6,9 +6,13 @@
 
 <section class="auth-shell">
     <div class="auth-card">
-        <p class="eyebrow">Electronic Lab Notebook</p>
+        <p class="eyebrow">Jordi ELN</p>
         <h1>Sign in</h1>
-        <p>Use one of the seeded demo accounts or your lab account after integration.</p>
+        <p>Use one of the seeded demo accounts or register a lab account and wait for admin approval.</p>
+        @if (TempData["AccountMessage"] is string accountMessage)
+        {
+            <div class="panel form-panel">@accountMessage</div>
+        }
         <form asp-action="Login" method="post">
             @Html.AntiForgeryToken()
             <input asp-for="ReturnUrl" type="hidden" />
@@ -20,6 +24,14 @@
             <label class="checkbox-row"><input asp-for="RememberMe" /> Remember me</label>
             <button type="submit" class="button primary wide">Sign in</button>
         </form>
+        <p class="small-note auth-footer-note">
+            Need an account?
+            <a asp-action="Register">Register here</a>
+        </p>
+        <p class="small-note auth-footer-note">
+            Forgot your password?
+            <a asp-action="ForgotPassword">Reset it here</a>
+        </p>
         <div class="demo-credentials">
             <strong>Seeded accounts</strong>
             <span><code>admin@lab.local</code> / <code>LabNotebook1</code></span>

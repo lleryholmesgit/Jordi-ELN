@@ -15,6 +15,7 @@ public static class SeedData
         var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
         var qrCodeService = provider.GetRequiredService<IQrCodeService>();
+        var passwordHasher = provider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
 
         await context.Database.EnsureCreatedAsync();
         await SchemaUpdater.EnsureCurrentSchemaAsync(context);
@@ -27,9 +28,9 @@ public static class SeedData
             }
         }
 
-        await EnsureUserAsync(userManager, "admin@lab.local", "Admin User", Roles.Admin);
-        await EnsureUserAsync(userManager, "researcher@lab.local", "Researcher User", Roles.Researcher);
-        await EnsureUserAsync(userManager, "reviewer@lab.local", "Reviewer User", Roles.Reviewer);
+        await EnsureUserAsync(userManager, passwordHasher, "admin@lab.local", "Admin User", Roles.Admin);
+        await EnsureUserAsync(userManager, passwordHasher, "researcher@lab.local", "Researcher User", Roles.Researcher);
+        await EnsureUserAsync(userManager, passwordHasher, "reviewer@lab.local", "Reviewer User", Roles.Reviewer);
 
         if (!await context.RecordTemplates.AnyAsync())
         {
@@ -93,10 +94,15 @@ public static class SeedData
         }
 
         await context.SaveChangesAsync();
+        await EnsureStorageLocationsAsync(context, qrCodeService);
+        await RefreshQrTokensAsync(context, qrCodeService);
+
+        await context.SaveChangesAsync();
     }
 
     private static async Task EnsureUserAsync(
         UserManager<ApplicationUser> userManager,
+        IPasswordHasher<ApplicationUser> passwordHasher,
         string email,
         string displayName,
         string role)
@@ -110,7 +116,8 @@ public static class SeedData
                 Email = email,
                 DisplayName = displayName,
                 EmailConfirmed = true,
-                Department = "Laboratory"
+                Department = "Laboratory",
+                RecoveryQuestion = "What is your lab or department name?"
             };
 
             var result = await userManager.CreateAsync(user, "LabNotebook1");
@@ -120,9 +127,81 @@ public static class SeedData
             }
         }
 
+        if (string.IsNullOrWhiteSpace(user.RecoveryQuestion))
+        {
+            user.RecoveryQuestion = "What is your lab or department name?";
+        }
+
+        var normalizedRecoveryAnswer = NormalizeRecoveryAnswer("Laboratory");
+        var recoveryAnswerVerification = string.IsNullOrWhiteSpace(user.RecoveryAnswerHash)
+            ? PasswordVerificationResult.Failed
+            : passwordHasher.VerifyHashedPassword(user, user.RecoveryAnswerHash, normalizedRecoveryAnswer);
+
+        if (recoveryAnswerVerification == PasswordVerificationResult.Failed)
+        {
+            user.RecoveryAnswerHash = passwordHasher.HashPassword(user, normalizedRecoveryAnswer);
+            await userManager.UpdateAsync(user);
+        }
+
         if (!await userManager.IsInRoleAsync(user, role))
         {
             await userManager.AddToRoleAsync(user, role);
         }
+    }
+
+    private static string NormalizeRecoveryAnswer(string answer)
+    {
+        return string.Join(' ', answer.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+    }
+
+    private static async Task EnsureStorageLocationsAsync(ApplicationDbContext context, IQrCodeService qrCodeService)
+    {
+        var inventoryItems = await context.Instruments.ToListAsync();
+        foreach (var item in inventoryItems.Where(x => x.StorageLocationId is null && !string.IsNullOrWhiteSpace(x.Location)))
+        {
+            var locationName = item.Location.Trim();
+            var storageLocation = await context.StorageLocations.FirstOrDefaultAsync(x => x.Name == locationName);
+            if (storageLocation is null)
+            {
+                storageLocation = new StorageLocation
+                {
+                    Name = locationName,
+                    Code = GenerateStorageLocationCode(),
+                    Notes = string.Empty
+                };
+                storageLocation.QrCodeToken = qrCodeService.GenerateStorageLocationToken(storageLocation.Code);
+                context.StorageLocations.Add(storageLocation);
+                await context.SaveChangesAsync();
+            }
+
+            item.StorageLocationId = storageLocation.Id;
+            item.Location = storageLocation.Name;
+        }
+    }
+
+    private static async Task RefreshQrTokensAsync(ApplicationDbContext context, IQrCodeService qrCodeService)
+    {
+        var inventoryItems = await context.Instruments.ToListAsync();
+        foreach (var item in inventoryItems)
+        {
+            if (string.IsNullOrWhiteSpace(item.QrCodeToken) || !qrCodeService.TryParseToken(item.QrCodeToken, out var parsedCode) || !string.Equals(parsedCode, item.Code, StringComparison.Ordinal))
+            {
+                item.QrCodeToken = qrCodeService.GenerateToken(item.Code);
+            }
+        }
+
+        var storageLocations = await context.StorageLocations.ToListAsync();
+        foreach (var location in storageLocations)
+        {
+            if (string.IsNullOrWhiteSpace(location.QrCodeToken) || !qrCodeService.TryParseStorageLocationToken(location.QrCodeToken, out var parsedCode) || !string.Equals(parsedCode, location.Code, StringComparison.Ordinal))
+            {
+                location.QrCodeToken = qrCodeService.GenerateStorageLocationToken(location.Code);
+            }
+        }
+    }
+
+    private static string GenerateStorageLocationCode()
+    {
+        return $"J-STO-{Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(4))}";
     }
 }

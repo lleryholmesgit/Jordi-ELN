@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ElectronicLabNotebook.Controllers;
 
@@ -23,7 +24,7 @@ public sealed class InventoryController : Controller
         ("Code", "Code"),
         ("Name", "Name"),
         ("Manufacturer", "Manufacturer"),
-        ("Location", "Location"),
+        ("Location", "Storage location"),
         ("Status", "Status"),
         ("Model", "Model"),
         ("SerialNumber", "Serial number"),
@@ -44,13 +45,15 @@ public sealed class InventoryController : Controller
     private readonly IQrCodeService _qrCodeService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _context;
+    private readonly IAuditService _auditService;
 
-    public InventoryController(IInstrumentService instrumentService, IQrCodeService qrCodeService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+    public InventoryController(IInstrumentService instrumentService, IQrCodeService qrCodeService, UserManager<ApplicationUser> userManager, ApplicationDbContext context, IAuditService auditService)
     {
         _instrumentService = instrumentService;
         _qrCodeService = qrCodeService;
         _userManager = userManager;
         _context = context;
+        _auditService = auditService;
     }
 
     public async Task<IActionResult> Index(string? q, InstrumentStatus? status, InventoryItemType? itemType, string? sortBy, bool descending, CancellationToken cancellationToken)
@@ -86,36 +89,64 @@ public sealed class InventoryController : Controller
             return NotFound();
         }
 
-        return View(ToEditorModel(inventoryItem));
+        var model = ToEditorModel(inventoryItem);
+        await PopulateStorageLocationOptionsAsync(model, cancellationToken);
+        return View(model);
+    }
+
+    [AllowAnonymous]
+    public async Task<IActionResult> ScanResult(int id, CancellationToken cancellationToken)
+    {
+        var inventoryItem = await _instrumentService.GetAsync(id, cancellationToken);
+        if (inventoryItem is null)
+        {
+            return NotFound();
+        }
+
+        var model = ToEditorModel(inventoryItem);
+        await PopulateStorageLocationOptionsAsync(model, cancellationToken);
+        return View(model);
     }
 
     [Authorize(Roles = Roles.Admin)]
+    [WindowsWriteAccess]
     public IActionResult Create(InventoryItemType itemType = InventoryItemType.Instrument)
     {
         return View("Edit", BuildNewInventoryModel(itemType));
     }
 
     [Authorize(Roles = Roles.Admin)]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var inventoryItem = await _instrumentService.GetAsync(id, cancellationToken);
-        return inventoryItem is null ? NotFound() : View(ToEditorModel(inventoryItem));
+        if (inventoryItem is null)
+        {
+            return NotFound();
+        }
+
+        var model = ToEditorModel(inventoryItem);
+        await PopulateStorageLocationOptionsAsync(model, cancellationToken);
+        return View(model);
     }
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public IActionResult GenerateQrCode(InstrumentEditorViewModel input)
     {
         input.Code = GenerateInventoryCode(input.ItemType);
         PopulateGeneratedQr(input);
         ModelState.Clear();
+        PopulateStorageLocationOptionsAsync(input, CancellationToken.None).GetAwaiter().GetResult();
         return View("Edit", input);
     }
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Save(InstrumentEditorViewModel input, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(input.Code))
@@ -124,9 +155,11 @@ public sealed class InventoryController : Controller
         }
 
         PopulateGeneratedQr(input);
+        ApplyInventoryValidation(input);
 
         if (!ModelState.IsValid)
         {
+            await PopulateStorageLocationOptionsAsync(input, cancellationToken);
             return View("Edit", input);
         }
 
@@ -146,6 +179,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -162,6 +196,7 @@ public sealed class InventoryController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> SaveLayout(List<InventoryColumnPreferenceInput> columns, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User);
@@ -193,6 +228,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> ImportSpreadsheet(IFormFile? spreadsheet, CancellationToken cancellationToken)
     {
         if (spreadsheet is null || spreadsheet.Length == 0)
@@ -239,6 +275,7 @@ public sealed class InventoryController : Controller
                 Name = GetValue(headers, columns, "Name"),
                 Manufacturer = GetValue(headers, columns, "Manufacturer"),
                 Location = GetValue(headers, columns, "Location"),
+                StorageLocationId = null,
                 Status = ParseEnum(GetValue(headers, columns, "Status"), InstrumentStatus.Active),
                 Model = GetValue(headers, columns, "Model"),
                 SerialNumber = GetValue(headers, columns, "SerialNumber"),
@@ -258,6 +295,12 @@ public sealed class InventoryController : Controller
             if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Name))
             {
                 continue;
+            }
+
+            request.Location = GetValue(headers, columns, "StorageLocation");
+            if (string.IsNullOrWhiteSpace(request.Location))
+            {
+                request.Location = GetValue(headers, columns, "Location");
             }
 
             var existing = await _instrumentService.GetByCodeAsync(request.Code, cancellationToken);
@@ -280,6 +323,7 @@ public sealed class InventoryController : Controller
     [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> RefreshQr(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -299,13 +343,40 @@ public sealed class InventoryController : Controller
     public async Task<IActionResult> ResolveScan(string qrPayload, CancellationToken cancellationToken)
     {
         var instrument = await _instrumentService.GetByTokenAsync(qrPayload, cancellationToken);
-        if (instrument is null)
+        if (instrument is not null)
         {
-            TempData["ScanError"] = "The QR code could not be resolved to an active instrument.";
-            return RedirectToAction(nameof(Scan));
+            return RedirectToAction(nameof(ScanResult), new { id = instrument.Id });
         }
 
-        return RedirectToAction(nameof(Details), new { id = instrument.Id });
+        if (_qrCodeService.TryParseStorageLocationToken(qrPayload, out var storageLocationCode))
+        {
+            var storageLocation = await _context.StorageLocations.FirstOrDefaultAsync(x => x.Code == storageLocationCode, cancellationToken);
+            if (storageLocation is not null)
+            {
+                return RedirectToAction("Details", "StorageLocations", new { id = storageLocation.Id });
+            }
+        }
+
+        TempData["ScanError"] = "The QR code could not be resolved to an active inventory item or storage location.";
+        return RedirectToAction(nameof(Scan));
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
+    public async Task<IActionResult> CheckInFromScan(int id, CancellationToken cancellationToken)
+    {
+        return await LogScanActionAndRedirectAsync(id, "InventoryItemCheckedIn", "Item checked in.", cancellationToken);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
+    public async Task<IActionResult> CheckOutFromScan(int id, CancellationToken cancellationToken)
+    {
+        return await LogScanActionAndRedirectAsync(id, "InventoryItemCheckedOut", "Item checked out.", cancellationToken);
     }
 
     private InstrumentEditorViewModel ToEditorModel(Instrument instrument)
@@ -319,7 +390,8 @@ public sealed class InventoryController : Controller
             Model = instrument.Model,
             Manufacturer = instrument.Manufacturer,
             SerialNumber = instrument.SerialNumber,
-            Location = instrument.Location,
+            Location = instrument.StorageLocation?.Name ?? instrument.Location,
+            StorageLocationId = instrument.StorageLocationId,
             Status = instrument.Status,
             OwnerName = instrument.OwnerName,
             CalibrationInfo = instrument.CalibrationInfo,
@@ -344,23 +416,82 @@ public sealed class InventoryController : Controller
             ItemType = input.ItemType,
             Code = input.Code,
             Name = input.Name,
-            Model = input.Model,
-            Manufacturer = input.Manufacturer,
-            SerialNumber = input.SerialNumber,
-            Location = input.Location,
+            Model = input.Model ?? string.Empty,
+            Manufacturer = input.Manufacturer ?? string.Empty,
+            SerialNumber = input.SerialNumber ?? string.Empty,
+            Location = input.Location ?? string.Empty,
+            StorageLocationId = input.StorageLocationId,
             Status = input.Status,
-            OwnerName = input.OwnerName,
-            CalibrationInfo = input.CalibrationInfo,
-            ProductNumber = input.ProductNumber,
-            CatalogNumber = input.CatalogNumber,
-            LotNumber = input.LotNumber,
-            ExpNumber = input.ExpNumber,
+            OwnerName = input.OwnerName ?? string.Empty,
+            CalibrationInfo = input.CalibrationInfo ?? string.Empty,
+            ProductNumber = input.ProductNumber ?? string.Empty,
+            CatalogNumber = input.CatalogNumber ?? string.Empty,
+            LotNumber = input.LotNumber ?? string.Empty,
+            ExpNumber = input.ExpNumber ?? string.Empty,
             Quantity = input.Quantity,
-            Unit = input.Unit,
+            Unit = input.Unit ?? string.Empty,
             OpenedOn = input.OpenedOn,
             ExpiresOn = input.ExpiresOn,
-            Notes = input.Notes
+            Notes = input.Notes ?? string.Empty
         };
+    }
+
+    private void ApplyInventoryValidation(InstrumentEditorViewModel input)
+    {
+        switch (input.ItemType)
+        {
+            case InventoryItemType.Instrument:
+                if (string.IsNullOrWhiteSpace(input.Manufacturer))
+                {
+                    ModelState.AddModelError(nameof(input.Manufacturer), "Manufacturer is required for instruments.");
+                }
+                if (!input.StorageLocationId.HasValue)
+                {
+                    ModelState.AddModelError(nameof(input.StorageLocationId), "Storage location is required for instruments.");
+                }
+                if (string.IsNullOrWhiteSpace(input.Model))
+                {
+                    ModelState.AddModelError(nameof(input.Model), "Model is required for instruments.");
+                }
+                break;
+            case InventoryItemType.Chemical:
+                if (string.IsNullOrWhiteSpace(input.Manufacturer))
+                {
+                    ModelState.AddModelError(nameof(input.Manufacturer), "Manufacturer is required for chemicals.");
+                }
+                if (!input.StorageLocationId.HasValue)
+                {
+                    ModelState.AddModelError(nameof(input.StorageLocationId), "Storage location is required for chemicals.");
+                }
+                if (string.IsNullOrWhiteSpace(input.CatalogNumber))
+                {
+                    ModelState.AddModelError(nameof(input.CatalogNumber), "Cat number is required for chemicals.");
+                }
+                if (string.IsNullOrWhiteSpace(input.LotNumber))
+                {
+                    ModelState.AddModelError(nameof(input.LotNumber), "Lot number is required for chemicals.");
+                }
+                if (!input.ExpiresOn.HasValue)
+                {
+                    ModelState.AddModelError(nameof(input.ExpiresOn), "Expiry date is required for chemicals.");
+                }
+                break;
+        }
+    }
+
+    private async Task<IActionResult> LogScanActionAndRedirectAsync(int id, string actionType, string successMessage, CancellationToken cancellationToken)
+    {
+        var inventoryItem = await _instrumentService.GetAsync(id, cancellationToken);
+        if (inventoryItem is null)
+        {
+            TempData["InventoryError"] = "The scanned inventory item could not be found.";
+            return RedirectToAction(nameof(Scan));
+        }
+
+        var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
+        await _auditService.WriteAsync(actionType, nameof(Instrument), id.ToString(), actorUserId, "WebScan", string.Empty, inventoryItem.Code);
+        TempData["InventoryMessage"] = successMessage;
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     private static string[] ParseDelimitedLine(string line, char delimiter)
@@ -431,6 +562,7 @@ public sealed class InventoryController : Controller
         };
 
         PopulateGeneratedQr(model);
+        PopulateStorageLocationOptionsAsync(model, CancellationToken.None).GetAwaiter().GetResult();
         return model;
     }
 
@@ -449,9 +581,25 @@ public sealed class InventoryController : Controller
 
     private static string GenerateInventoryCode(InventoryItemType itemType)
     {
-        var prefix = itemType == InventoryItemType.Instrument ? "J-INS" : "J-CH";
+        var prefix = itemType switch
+        {
+            InventoryItemType.Instrument => "J-INS",
+            InventoryItemType.Chemical => "J-CH",
+            InventoryItemType.Extract => "J-EXT",
+            InventoryItemType.Consumable => "J-CON",
+            InventoryItemType.OfficeSupply => "J-OFF",
+            _ => "J-INV"
+        };
         var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(4));
         return $"{prefix}-{suffix}";
+    }
+
+    private async Task PopulateStorageLocationOptionsAsync(InstrumentEditorViewModel model, CancellationToken cancellationToken)
+    {
+        model.StorageLocationOptions = await _context.StorageLocations
+            .OrderBy(x => x.Name)
+            .Select(x => new SelectListItem($"{x.Name} ({x.Code})", x.Id.ToString()))
+            .ToListAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<InventoryColumnPreference>> LoadColumnPreferencesAsync(string actorUserId, CancellationToken cancellationToken)

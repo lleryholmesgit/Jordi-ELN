@@ -16,34 +16,22 @@ public sealed class QrCodeService : IQrCodeService
 
     public string GenerateToken(string instrumentCode)
     {
-        var signature = ComputeSignature(instrumentCode);
-        return $"eln://instrument/{instrumentCode}?sig={signature}";
+        return GenerateScopedToken("instrument", instrumentCode);
     }
 
     public bool TryParseToken(string token, out string instrumentCode)
     {
-        instrumentCode = string.Empty;
-        const string prefix = "eln://instrument/";
-        if (!token.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+        return TryParseScopedToken(token, "instrument", out instrumentCode);
+    }
 
-        var parts = token[prefix.Length..].Split("?sig=", StringSplitOptions.TrimEntries);
-        if (parts.Length != 2)
-        {
-            return false;
-        }
+    public string GenerateStorageLocationToken(string storageLocationCode)
+    {
+        return GenerateScopedToken("storage-location", storageLocationCode);
+    }
 
-        var code = parts[0];
-        var signature = parts[1];
-        if (!string.Equals(signature, ComputeSignature(code), StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        instrumentCode = code;
-        return true;
+    public bool TryParseStorageLocationToken(string token, out string storageLocationCode)
+    {
+        return TryParseScopedToken(token, "storage-location", out storageLocationCode);
     }
 
     public string GenerateSvg(string token)
@@ -59,5 +47,38 @@ public sealed class QrCodeService : IQrCodeService
         using var hmac = new HMACSHA256(_key);
         var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
         return Convert.ToHexString(bytes[..8]);
+    }
+
+    private string GenerateScopedToken(string scope, string code)
+    {
+        var payload = $"{scope}:{code}";
+        var signature = ComputeSignature(payload);
+        return $"eln://{scope}/{code}?sig={signature}";
+    }
+
+    private bool TryParseScopedToken(string token, string scope, out string code)
+    {
+        code = string.Empty;
+        var prefix = $"eln://{scope}/";
+        if (!token.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var parts = token[prefix.Length..].Split("?sig=", StringSplitOptions.TrimEntries);
+        if (parts.Length != 2)
+        {
+            return false;
+        }
+
+        var parsedCode = parts[0];
+        var signature = parts[1];
+        if (!string.Equals(signature, ComputeSignature($"{scope}:{parsedCode}"), StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        code = parsedCode;
+        return true;
     }
 }

@@ -42,4 +42,23 @@ public sealed class QrCodeServiceTests
 
         Assert.False(success);
     }
+
+    [Fact]
+    public void GenerateStorageLocationToken_ProducesRoundTrippablePayload()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["QrCode:SigningKey"] = "unit-test-key"
+            })
+            .Build();
+
+        var service = new QrCodeService(configuration);
+        var token = service.GenerateStorageLocationToken("J-STO-ABCD1234");
+
+        var success = service.TryParseStorageLocationToken(token, out var code);
+
+        Assert.True(success);
+        Assert.Equal("J-STO-ABCD1234", code);
+    }
 }

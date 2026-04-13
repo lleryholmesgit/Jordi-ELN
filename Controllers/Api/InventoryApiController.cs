@@ -1,8 +1,10 @@
+using ElectronicLabNotebook.Data;
 using ElectronicLabNotebook.Models;
 using ElectronicLabNotebook.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ElectronicLabNotebook.Controllers.Api;
 
@@ -14,25 +16,28 @@ public sealed class InventoryApiController : ApiControllerBase
     private readonly IInstrumentService _instrumentService;
     private readonly IQrCodeService _qrCodeService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _context;
 
-    public InventoryApiController(IInstrumentService instrumentService, IQrCodeService qrCodeService, UserManager<ApplicationUser> userManager)
+    public InventoryApiController(IInstrumentService instrumentService, IQrCodeService qrCodeService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
     {
         _instrumentService = instrumentService;
         _qrCodeService = qrCodeService;
         _userManager = userManager;
+        _context = context;
     }
 
     [HttpGet]
     public async Task<IActionResult> Search([FromQuery] string? query, [FromQuery] InstrumentStatus? status, [FromQuery] InventoryItemType? itemType, CancellationToken cancellationToken)
     {
-        return Ok(await _instrumentService.SearchAsync(new InstrumentSearchRequest { Query = query ?? string.Empty, Status = status, ItemType = itemType }, cancellationToken));
+        var items = await _instrumentService.SearchAsync(new InstrumentSearchRequest { Query = query ?? string.Empty, Status = status, ItemType = itemType }, cancellationToken);
+        return Ok(items.Select(MapInventoryItem));
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken cancellationToken)
     {
         var item = await _instrumentService.GetAsync(id, cancellationToken);
-        return item is null ? NotFound() : Ok(item);
+        return item is null ? NotFound() : Ok(MapInventoryItem(item));
     }
 
     [HttpPost]
@@ -67,25 +72,88 @@ public sealed class InventoryApiController : ApiControllerBase
     public async Task<IActionResult> ResolveQr([FromBody] ResolveQrRequest request, CancellationToken cancellationToken)
     {
         var instrument = await _instrumentService.GetByTokenAsync(request.QrPayload, cancellationToken);
-        if (instrument is null)
+        if (instrument is not null)
         {
-            return NotFound(new { success = false, message = "The QR code could not be resolved." });
+            return Ok(new
+            {
+                success = true,
+                message = "Inventory item resolved.",
+                type = "inventory-item",
+                instrument = new
+                {
+                    instrument.Id,
+                    instrument.Code,
+                    instrument.Name,
+                    instrument.Model,
+                    Location = instrument.StorageLocation?.Name ?? instrument.Location,
+                    instrument.StorageLocationId,
+                    instrument.Status,
+                    actions = new
+                    {
+                        viewPath = $"/Inventory/Details/{instrument.Id}",
+                        scanOptionsPath = $"/Inventory/ScanResult/{instrument.Id}",
+                        addToElnPath = $"/Records/Create?inventoryCode={Uri.EscapeDataString(instrument.Code)}"
+                    }
+                }
+            });
         }
 
-        return Ok(new
+        if (_qrCodeService.TryParseStorageLocationToken(request.QrPayload, out var storageLocationCode))
         {
-            success = true,
-            message = "Instrument resolved.",
-            instrument = new
+            var storageLocation = await _context.StorageLocations
+                .Include(x => x.InventoryItems)
+                .FirstOrDefaultAsync(x => x.Code == storageLocationCode, cancellationToken);
+            if (storageLocation is not null)
             {
-                instrument.Id,
-                instrument.Code,
-                instrument.Name,
-                instrument.Model,
-                instrument.Location,
-                instrument.Status
+                return Ok(new
+                {
+                    success = true,
+                    message = "Storage location resolved.",
+                    type = "storage-location",
+                    storageLocation = new
+                    {
+                        storageLocation.Id,
+                        storageLocation.Code,
+                        storageLocation.Name,
+                        storageLocation.Notes,
+                        storageLocation.QrCodeToken,
+                        InventoryItemCount = storageLocation.InventoryItems.Count,
+                        detailPath = $"/StorageLocations/Details/{storageLocation.Id}"
+                    }
+                });
             }
-        });
+        }
+
+        return NotFound(new { success = false, message = "The QR code could not be resolved." });
+    }
+
+    private static object MapInventoryItem(Instrument item)
+    {
+        return new
+        {
+            item.Id,
+            item.ItemType,
+            item.Code,
+            item.Name,
+            item.Model,
+            item.Manufacturer,
+            item.SerialNumber,
+            Location = item.StorageLocation?.Name ?? item.Location,
+            item.StorageLocationId,
+            item.Status,
+            item.OwnerName,
+            item.CalibrationInfo,
+            item.ProductNumber,
+            CatalogNumber = item.CatalogNumber,
+            item.LotNumber,
+            item.ExpNumber,
+            item.Quantity,
+            item.Unit,
+            item.OpenedOn,
+            item.ExpiresOn,
+            item.Notes,
+            item.QrCodeToken
+        };
     }
 
     public sealed class ResolveQrRequest

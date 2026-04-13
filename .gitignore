@@ -18,3 +18,7 @@ App_Data/
 *.log
 *.html
 Things to do.txt
+To do list.docx
+~$*.docx
+~WRL*.tmp
+qc

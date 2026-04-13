@@ -10,4 +10,10 @@ public sealed class ApplicationUser : IdentityUser
 
     [MaxLength(120)]
     public string Department { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string RecoveryQuestion { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
+    public string RecoveryAnswerHash { get; set; } = string.Empty;
 }

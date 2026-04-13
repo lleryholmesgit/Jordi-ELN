@@ -17,6 +17,7 @@ public sealed class InstrumentSaveRequest
     public string Manufacturer { get; set; } = string.Empty;
     public string SerialNumber { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
+    public int? StorageLocationId { get; set; }
     public InstrumentStatus Status { get; set; } = InstrumentStatus.Active;
     public string OwnerName { get; set; } = string.Empty;
     public string CalibrationInfo { get; set; } = string.Empty;

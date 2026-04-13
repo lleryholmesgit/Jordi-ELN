@@ -26,6 +26,10 @@ public sealed class Instrument
     [MaxLength(160)]
     public string Location { get; set; } = string.Empty;
 
+    public int? StorageLocationId { get; set; }
+
+    public StorageLocation? StorageLocation { get; set; }
+
     public InstrumentStatus Status { get; set; } = InstrumentStatus.Active;
 
     [MaxLength(160)]

@@ -1,0 +1,61 @@
+@model StorageLocationIndexViewModel
+@{
+    ViewData["Title"] = "Storage Locations";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Inventory</p>
+        <h1>Storage Locations</h1>
+        <p class="small-note">Browse all storage spaces and open any location to see the inventory items stored there.</p>
+    </div>
+    @if (User.IsInRole("Admin") && !isIosClient)
+    {
+        <a class="button primary" asp-action="Create">New storage location</a>
+    }
+</section>
+
+@if (TempData["StorageLocationMessage"] is string storageLocationMessage)
+{
+    <section class="panel form-panel">@storageLocationMessage</section>
+}
+
+@if (TempData["StorageLocationError"] is string storageLocationError)
+{
+    <section class="panel form-panel validation">@storageLocationError</section>
+}
+
+<section class="panel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Notes</th>
+                <th>Inventory items</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var location in Model.Locations)
+        {
+            <tr>
+                <td>@location.Code</td>
+                <td>@location.Name</td>
+                <td>@location.Notes</td>
+                <td>@location.InventoryItemCount</td>
+                <td>
+                    <div class="button-group">
+                        <a asp-action="Details" asp-route-id="@location.Id">Open</a>
+                        @if (User.IsInRole("Admin") && !isIosClient)
+                        {
+                            <a asp-action="Edit" asp-route-id="@location.Id">Edit</a>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</section>

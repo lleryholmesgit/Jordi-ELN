@@ -1,12 +1,13 @@
-﻿@model AdminIndexViewModel
+@model AdminIndexViewModel
 @{
     ViewData["Title"] = "Admin";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
 }
 
 <section class="page-header">
     <p class="eyebrow">Administration</p>
     <h1>Admin overview</h1>
-    <p>Review users, adjust role assignments, and inspect available record templates.</p>
+    <p>Review users, assign roles, and monitor shared template availability.</p>
 </section>
 
 @if (TempData["AdminMessage"] is string adminMessage)
@@ -27,7 +28,10 @@
                 <tr>
                     <th>Email</th>
                     <th>Display name</th>
+                    <th>Department</th>
+                    <th>Status</th>
                     <th>Role controls</th>
+                    <th>Account actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -36,18 +40,61 @@
                 <tr>
                     <td>@user.Email</td>
                     <td>@user.DisplayName</td>
+                    <td>@user.Department</td>
                     <td>
-                        <form asp-action="UpdateRoles" method="post" class="inline-form">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="userId" value="@user.Id" />
-                            <input type="hidden" name="isAdmin" value="false" />
-                            <input type="hidden" name="isResearcher" value="false" />
-                            <input type="hidden" name="isReviewer" value="false" />
-                            <label class="checkbox-row"><input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : null) /> Admin</label>
-                            <label class="checkbox-row"><input type="checkbox" name="isResearcher" value="true" @(user.IsResearcher ? "checked" : null) /> Researcher</label>
-                            <label class="checkbox-row"><input type="checkbox" name="isReviewer" value="true" @(user.IsReviewer ? "checked" : null) /> Reviewer</label>
-                            <button type="submit" class="button secondary">Save roles</button>
-                        </form>
+                        @if (user.HasAssignedRole)
+                        {
+                            <span class="status approved">Active</span>
+                        }
+                        else
+                        {
+                            <span class="status submitted">Pending admin assignment</span>
+                        }
+                    </td>
+                    <td>
+                        @if (isIosClient)
+                        {
+                            <span class="small-note">Role assignment is available only on Windows clients.</span>
+                        }
+                        else
+                        {
+                            <form asp-action="UpdateRoles" method="post" class="inline-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <label class="checkbox-row"><input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : null) /> Admin</label>
+                                <label class="checkbox-row"><input type="checkbox" name="isResearcher" value="true" @(user.IsResearcher ? "checked" : null) /> Researcher</label>
+                                <label class="checkbox-row"><input type="checkbox" name="isReviewer" value="true" @(user.IsReviewer ? "checked" : null) /> Reviewer</label>
+                                <button type="submit" class="button secondary">Save roles</button>
+                            </form>
+                        }
+                    </td>
+                    <td>
+                        @if (isIosClient)
+                        {
+                            <span class="small-note">Account actions are available only on Windows clients.</span>
+                        }
+                        else
+                        {
+                            <div class="stack-actions">
+                                <form asp-action="SendPasswordResetEmail" method="post" class="inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="button secondary">Send reset email</button>
+                                </form>
+                                @if (user.CanDelete)
+                                {
+                                    <form asp-action="DeleteUser" method="post" class="inline-form" onsubmit="return confirm('Delete this account? This cannot be undone.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <button type="submit" class="button danger">Delete account</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="small-note">Admin accounts cannot be deleted.</span>
+                                }
+                            </div>
+                        }
                     </td>
                 </tr>
             }
@@ -56,6 +103,7 @@
     </article>
     <article class="panel">
         <h2>Record templates</h2>
+        <p class="small-note">Windows users can manage shared templates from the Templates area.</p>
         <ul class="entity-list">
             @foreach (var template in Model.Templates)
             {

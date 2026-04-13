@@ -1,9 +1,10 @@
-﻿@model InventoryIndexViewModel
+@model InventoryIndexViewModel
 @{
     ViewData["Title"] = "Inventory";
     string currentSort = (string?)ViewBag.SortBy ?? "Code";
     bool currentDescending = (bool?)ViewBag.Descending ?? false;
     string nextDirection(string sortBy) => currentSort == sortBy && !currentDescending ? "true" : "false";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -11,11 +12,14 @@
         <p class="eyebrow">Inventory</p>
         <h1>Inventory</h1>
     </div>
-    @if (User.IsInRole("Admin"))
+    @if (User.IsInRole("Admin") && !isIosClient)
     {
         <div class="button-group">
             <a class="button primary" asp-action="Create" asp-route-itemType="Instrument">New instrument</a>
             <a class="button secondary" asp-action="Create" asp-route-itemType="Chemical">New chemical</a>
+            <a class="button secondary" asp-action="Create" asp-route-itemType="Extract">New extract</a>
+            <a class="button secondary" asp-action="Create" asp-route-itemType="Consumable">New consumable</a>
+            <a class="button secondary" asp-action="Create" asp-route-itemType="OfficeSupply">New office supply</a>
         </div>
     }
 </section>
@@ -30,18 +34,17 @@
     <section class="panel form-panel validation">@inventoryError</section>
 }
 
-@if (User.IsInRole("Admin"))
+@if (User.IsInRole("Admin") && !isIosClient)
 {
     <section class="panel form-panel">
         <div class="panel-header"><h2>Add inventory</h2></div>
-        <p>Upload a CSV spreadsheet with headers such as <code>ItemType</code>, <code>Code</code>, <code>Name</code>, <code>Manufacturer</code>, <code>Location</code>, <code>Status</code>, <code>ProductNumber</code>, <code>CatalogNumber</code>, <code>LotNumber</code>, <code>ExpNumber</code>, <code>Quantity</code>, <code>Unit</code>, <code>OpenedOn</code>, <code>ExpiresOn</code>, and <code>Notes</code>.</p>
+        <p>Upload a CSV spreadsheet with headers such as <code>ItemType</code>, <code>Code</code>, <code>Name</code>, <code>Manufacturer</code>, <code>StorageLocation</code>, <code>Status</code>, <code>Model</code>, <code>SerialNumber</code>, <code>OwnerName</code>, <code>CalibrationInfo</code>, <code>ProductNumber</code>, <code>CatalogNumber</code>, <code>LotNumber</code>, <code>ExpNumber</code>, <code>Quantity</code>, <code>Unit</code>, <code>OpenedOn</code>, <code>ExpiresOn</code>, and <code>Notes</code>.</p>
         <form asp-action="ImportSpreadsheet" method="post" enctype="multipart/form-data" class="inline-form">
             @Html.AntiForgeryToken()
             <input type="file" name="spreadsheet" accept=".csv,.txt,.tsv" />
             <button type="submit" class="button primary">Import spreadsheet</button>
         </form>
     </section>
-
 }
 
 <form method="get" class="toolbar">
@@ -63,7 +66,7 @@
     <button type="submit" class="button secondary">Filter</button>
 </form>
 
-<div class="panel form-panel inventory-table-panel" style="overflow-x:auto;" data-column-layout-editor data-save-url="@Url.Action("SaveLayout", "Inventory")">
+<div class="panel form-panel inventory-table-panel" style="overflow-x:auto;" @(isIosClient ? null : "data-column-layout-editor") data-save-url="@Url.Action("SaveLayout", "Inventory")">
     <form asp-action="SaveLayout" method="post" data-layout-form class="hidden-layout-form">
         @Html.AntiForgeryToken()
     </form>
@@ -76,70 +79,70 @@
             }
         </div>
     </div>
-<table class="table" data-inventory-table>
-    <thead>
-        <tr>
-            @foreach (var column in Model.Columns.OrderBy(x => x.Position))
-            {
-                <th data-column-key="@column.Key"
-                    data-column-label="@column.Label"
-                    class="@(column.IsVisible ? string.Empty : "is-hidden-column")"
-                    draggable="true">
-                    <div class="inventory-column-heading">
-                        <a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-itemType="@ViewBag.ItemType" asp-route-status="@ViewBag.Status" asp-route-sortBy="@column.Key" asp-route-descending="@nextDirection(column.Key)">@column.Label</a>
-                        <button type="button" class="column-header-remove" data-hide-column aria-label="Hide @column.Label">-</button>
+    <table class="table" data-inventory-table>
+        <thead>
+            <tr>
+                @foreach (var column in Model.Columns.OrderBy(x => x.Position))
+                {
+                    <th data-column-key="@column.Key"
+                        data-column-label="@column.Label"
+                        class="@(column.IsVisible ? string.Empty : "is-hidden-column")"
+                        draggable="true">
+                        <div class="inventory-column-heading">
+                            <a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-itemType="@ViewBag.ItemType" asp-route-status="@ViewBag.Status" asp-route-sortBy="@column.Key" asp-route-descending="@nextDirection(column.Key)">@column.Label</a>
+                            <button type="button" class="column-header-remove" data-hide-column aria-label="Hide @column.Label">-</button>
+                        </div>
+                    </th>
+                }
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                @foreach (var column in Model.Columns.OrderBy(x => x.Position))
+                {
+                    <td data-column-key="@column.Key" class="@(column.IsVisible ? string.Empty : "is-hidden-column")">
+                        @switch (column.Key)
+                        {
+                            case "ItemType": @item.ItemType; break;
+                            case "Code": @item.Code; break;
+                            case "Name": @item.Name; break;
+                            case "Manufacturer": @item.Manufacturer; break;
+                            case "Location": @(item.StorageLocation?.Name ?? item.Location); break;
+                            case "Status": @item.Status; break;
+                            case "Model": @item.Model; break;
+                            case "SerialNumber": @item.SerialNumber; break;
+                            case "OwnerName": @item.OwnerName; break;
+                            case "CalibrationInfo": @item.CalibrationInfo; break;
+                            case "ProductNumber": @item.ProductNumber; break;
+                            case "CatalogNumber": @item.CatalogNumber; break;
+                            case "LotNumber": @item.LotNumber; break;
+                            case "ExpNumber": @item.ExpNumber; break;
+                            case "Quantity": @item.Quantity; break;
+                            case "Unit": @item.Unit; break;
+                            case "OpenedOn": @item.OpenedOn; break;
+                            case "ExpiresOn": @item.ExpiresOn; break;
+                            case "Notes": @item.Notes; break;
+                        }
+                    </td>
+                }
+                <td>
+                    <div class="button-group">
+                        <a asp-action="Details" asp-route-id="@item.Id">Open</a>
+                        @if (User.IsInRole("Admin") && !isIosClient)
+                        {
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this inventory item?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="button danger">Delete</button>
+                            </form>
+                        }
                     </div>
-                </th>
-            }
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var item in Model.Items)
-    {
-        <tr>
-            @foreach (var column in Model.Columns.OrderBy(x => x.Position))
-            {
-                <td data-column-key="@column.Key" class="@(column.IsVisible ? string.Empty : "is-hidden-column")">
-                    @switch (column.Key)
-                    {
-                        case "ItemType": @item.ItemType; break;
-                        case "Code": @item.Code; break;
-                        case "Name": @item.Name; break;
-                        case "Manufacturer": @item.Manufacturer; break;
-                        case "Location": @item.Location; break;
-                        case "Status": @item.Status; break;
-                        case "Model": @item.Model; break;
-                        case "SerialNumber": @item.SerialNumber; break;
-                        case "OwnerName": @item.OwnerName; break;
-                        case "CalibrationInfo": @item.CalibrationInfo; break;
-                        case "ProductNumber": @item.ProductNumber; break;
-                        case "CatalogNumber": @item.CatalogNumber; break;
-                        case "LotNumber": @item.LotNumber; break;
-                        case "ExpNumber": @item.ExpNumber; break;
-                        case "Quantity": @item.Quantity; break;
-                        case "Unit": @item.Unit; break;
-                        case "OpenedOn": @item.OpenedOn; break;
-                        case "ExpiresOn": @item.ExpiresOn; break;
-                        case "Notes": @item.Notes; break;
-                    }
                 </td>
-            }
-            <td>
-                <div class="button-group">
-                    <a asp-action="Details" asp-route-id="@item.Id">Open</a>
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this inventory item?');">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@item.Id" />
-                            <button type="submit" class="button danger">Delete</button>
-                        </form>
-                    }
-                </div>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+            </tr>
+        }
+        </tbody>
+    </table>
 </div>

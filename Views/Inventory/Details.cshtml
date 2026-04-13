@@ -1,15 +1,16 @@
-﻿@model InstrumentEditorViewModel
+@model InstrumentEditorViewModel
 @{
     ViewData["Title"] = "Inventory item details";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
 }
 
 <section class="page-header split">
     <div>
         <p class="eyebrow">Inventory</p>
         <h1>@Model.Code</h1>
-        <p>@Model.ItemType · @Model.Name · @Model.Location</p>
+        <p>@Model.ItemType · @Model.Name · @(string.IsNullOrWhiteSpace(Model.Location) ? "No storage location" : Model.Location)</p>
     </div>
-    @if (User.IsInRole("Admin"))
+    @if (User.IsInRole("Admin") && !isIosClient)
     {
         <div class="button-group">
             <a class="button secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
@@ -29,17 +30,46 @@
             <div><dt>Type</dt><dd>@Model.ItemType</dd></div>
             <div><dt>Name</dt><dd>@Model.Name</dd></div>
             <div><dt>Manufacturer</dt><dd>@Model.Manufacturer</dd></div>
-            <div><dt>Location</dt><dd>@Model.Location</dd></div>
+            <div>
+                <dt>Storage location</dt>
+                <dd>
+                    @if (Model.StorageLocationId.HasValue)
+                    {
+                        <a asp-controller="StorageLocations" asp-action="Details" asp-route-id="@Model.StorageLocationId">@Model.Location</a>
+                    }
+                    else
+                    {
+                        @Model.Location
+                    }
+                </dd>
+            </div>
             <div><dt>Status</dt><dd>@Model.Status</dd></div>
             @if (Model.ItemType == InventoryItemType.Instrument)
             {
                 <div><dt>Model</dt><dd>@Model.Model</dd></div>
                 <div><dt>Serial number</dt><dd>@Model.SerialNumber</dd></div>
-                <div><dt>Owner</dt><dd>@Model.OwnerName</dd></div>
                 <div><dt>Calibration</dt><dd>@Model.CalibrationInfo</dd></div>
+                <div><dt>Product number</dt><dd>@Model.ProductNumber</dd></div>
+                <div><dt>Cat number</dt><dd>@Model.CatalogNumber</dd></div>
+                <div><dt>Lot number</dt><dd>@Model.LotNumber</dd></div>
+                <div><dt>Quantity</dt><dd>@(Model.Quantity.HasValue ? $"{Model.Quantity:0.##} {Model.Unit}".Trim() : Model.Unit)</dd></div>
+            }
+            else if (Model.ItemType == InventoryItemType.Chemical)
+            {
+                <div><dt>Product number</dt><dd>@Model.ProductNumber</dd></div>
+                <div><dt>Cat number</dt><dd>@Model.CatalogNumber</dd></div>
+                <div><dt>Lot number</dt><dd>@Model.LotNumber</dd></div>
+                <div><dt>Exp number</dt><dd>@Model.ExpNumber</dd></div>
+                <div><dt>Quantity</dt><dd>@(Model.Quantity.HasValue ? $"{Model.Quantity:0.##} {Model.Unit}".Trim() : Model.Unit)</dd></div>
+                <div><dt>Opened on</dt><dd>@Model.OpenedOn</dd></div>
+                <div><dt>Expiry date</dt><dd>@Model.ExpiresOn</dd></div>
             }
             else
             {
+                <div><dt>Model</dt><dd>@Model.Model</dd></div>
+                <div><dt>Serial number</dt><dd>@Model.SerialNumber</dd></div>
+                <div><dt>Owner</dt><dd>@Model.OwnerName</dd></div>
+                <div><dt>Calibration</dt><dd>@Model.CalibrationInfo</dd></div>
                 <div><dt>Product number</dt><dd>@Model.ProductNumber</dd></div>
                 <div><dt>Cat number</dt><dd>@Model.CatalogNumber</dd></div>
                 <div><dt>Lot number</dt><dd>@Model.LotNumber</dd></div>
@@ -57,7 +87,7 @@
         <div class="qr-card">@Html.Raw(Model.QrCodeSvg)</div>
         <label>QR payload</label>
         <textarea rows="4" readonly>@Model.QrCodeToken</textarea>
-        @if (User.IsInRole("Admin"))
+        @if (User.IsInRole("Admin") && !isIosClient)
         {
             <form asp-action="RefreshQr" method="post" class="inline-form">
                 @Html.AntiForgeryToken()

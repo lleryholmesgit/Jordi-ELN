@@ -65,12 +65,50 @@ public sealed class RecordService : IRecordService
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<string> GetSuggestedExperimentCodeAsync(string projectName, string client, int? recordId = null, CancellationToken cancellationToken = default)
+    {
+        var normalizedProject = (projectName ?? string.Empty).Trim();
+        var normalizedClient = (client ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedProject) || string.IsNullOrWhiteSpace(normalizedClient))
+        {
+            return string.Empty;
+        }
+
+        if (recordId.HasValue)
+        {
+            var current = await _context.ExperimentRecords
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == recordId.Value, cancellationToken);
+            if (current is not null
+                && string.Equals(current.ProjectName, normalizedProject, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(current.Title, normalizedClient, StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(current.ExperimentCode, out var currentCode)
+                && currentCode > 0)
+            {
+                return currentCode.ToString();
+            }
+        }
+
+        var existingCodes = await _context.ExperimentRecords
+            .Where(x => x.ProjectName == normalizedProject && x.Title == normalizedClient && (!recordId.HasValue || x.Id != recordId.Value))
+            .Select(x => x.ExperimentCode)
+            .ToListAsync(cancellationToken);
+
+        var maxSequence = existingCodes
+            .Select(code => int.TryParse(code, out var parsed) ? parsed : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return (maxSequence + 1).ToString();
+    }
+
     public async Task<ExperimentRecord> CreateAsync(RecordSaveRequest request, string actorUserId, string sourceClient, IEnumerable<IFormFile>? files = null, CancellationToken cancellationToken = default)
     {
+        var generatedExperimentCode = await GetSuggestedExperimentCodeAsync(request.ProjectName ?? string.Empty, request.Title, null, cancellationToken);
         var entity = new ExperimentRecord
         {
             Title = request.Title,
-            ExperimentCode = request.ExperimentCode,
+            ExperimentCode = generatedExperimentCode,
             ConductedOn = request.ConductedOn,
             ProjectName = request.ProjectName ?? string.Empty,
             PrincipalInvestigator = request.PrincipalInvestigator ?? string.Empty,
@@ -81,6 +119,9 @@ public sealed class RecordService : IRecordService
             FlowchartJson = request.FlowchartJson ?? "{\"nodes\":[],\"edges\":[]}",
             FlowchartPreviewPath = request.FlowchartPreviewPath ?? string.Empty,
             SignatureStatement = request.SignatureStatement ?? string.Empty,
+            SignatureTimestampUtc = request.SignatureDate.HasValue
+                ? new DateTimeOffset(request.SignatureDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
+                : null,
             SignatureHash = ComputeSignatureHash(request),
             CreatedByUserId = actorUserId,
             LastUpdatedByUserId = actorUserId
@@ -115,9 +156,10 @@ public sealed class RecordService : IRecordService
         }
 
         var beforeJson = JsonSerializer.Serialize(entity, JsonOptions);
+        var generatedExperimentCode = await GetSuggestedExperimentCodeAsync(request.ProjectName ?? string.Empty, request.Title, id, cancellationToken);
 
         entity.Title = request.Title;
-        entity.ExperimentCode = request.ExperimentCode;
+        entity.ExperimentCode = generatedExperimentCode;
         entity.ConductedOn = request.ConductedOn;
         entity.ProjectName = request.ProjectName ?? string.Empty;
         entity.PrincipalInvestigator = request.PrincipalInvestigator ?? string.Empty;
@@ -128,6 +170,9 @@ public sealed class RecordService : IRecordService
         entity.FlowchartJson = request.FlowchartJson ?? "{\"nodes\":[],\"edges\":[]}";
         entity.FlowchartPreviewPath = request.FlowchartPreviewPath ?? string.Empty;
         entity.SignatureStatement = request.SignatureStatement ?? string.Empty;
+        entity.SignatureTimestampUtc = request.SignatureDate.HasValue
+            ? new DateTimeOffset(request.SignatureDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
+            : null;
         entity.SignatureHash = ComputeSignatureHash(request);
         entity.LastUpdatedByUserId = actorUserId;
         entity.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -235,7 +280,6 @@ public sealed class RecordService : IRecordService
         entity.ReviewedByUserId = actorUserId;
         entity.ReviewedAtUtc = DateTimeOffset.UtcNow;
         entity.ReviewComment = comment ?? string.Empty;
-        entity.SignatureTimestampUtc = DateTimeOffset.UtcNow;
         entity.UpdatedAtUtc = DateTimeOffset.UtcNow;
         entity.ReviewHistory.Add(new ReviewAction
         {
@@ -281,7 +325,7 @@ public sealed class RecordService : IRecordService
 
     private static string ComputeSignatureHash(RecordSaveRequest request)
     {
-        var raw = $"{request.Title}|{request.ExperimentCode}|{request.ConductedOn}|{request.RichTextContent}|{request.FlowchartJson}|{request.SignatureStatement}";
+        var raw = $"{request.Title}|{request.ProjectName}|{request.ConductedOn}|{request.RichTextContent}|{request.FlowchartJson}|{request.SignatureStatement}|{request.SignatureDate}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
         return Convert.ToHexString(bytes);
     }

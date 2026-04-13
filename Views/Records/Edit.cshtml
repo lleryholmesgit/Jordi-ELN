@@ -16,7 +16,12 @@
     }
 </section>
 
-<form asp-action="Save" method="post" class="editor-layout" data-record-editor>
+<form asp-action="Save"
+      method="post"
+      class="editor-layout"
+      data-record-editor
+      data-experiment-code-url="@Url.Action("SuggestExperimentCode", "Records")"
+      data-initial-inventory-code="@Model.InitialInventoryCode">
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <input asp-for="InstrumentLinksJson" type="hidden" data-instrument-links />
@@ -28,7 +33,7 @@
     <section class="panel form-panel">
         <div class="form-grid two-col">
             <div><label asp-for="Title"></label><input asp-for="Title" /></div>
-            <div><label asp-for="ExperimentCode"></label><input asp-for="ExperimentCode" /></div>
+            <div><label asp-for="ExperimentCode"></label><input asp-for="ExperimentCode" readonly /></div>
             <div><label asp-for="ConductedOn"></label><input asp-for="ConductedOn" /></div>
             <div><label asp-for="TemplateId">Template</label><select asp-for="TemplateId" asp-items="Model.TemplateOptions"><option value="">No template</option></select></div>
             <div><label asp-for="ProjectName"></label><input asp-for="ProjectName" /></div>
@@ -40,10 +45,11 @@
         <div class="panel-header">
             <div>
                 <h2>Notebook content</h2>
-                <p class="small-note">Type directly in the editor. Insert inventory references, interactive tables, and photos right into the notebook narrative.</p>
+                <p class="small-note">Type directly in the editor. Insert inventory references, interactive tables, and photos right into the notebook narrative. Selecting a template can preload highlighted review sections.</p>
             </div>
         </div>
         <div class="notebook-editor-shell">
+            <script type="application/json" data-template-options>@Html.Raw(JsonSerializer.Serialize(Model.TemplatePayloads))</script>
             <script type="application/json" data-inventory-options>@Html.Raw(JsonSerializer.Serialize(Model.InventoryLookupOptions))</script>
             <script type="application/json" data-notebook-options>@Html.Raw(JsonSerializer.Serialize(Model.NotebookLookupOptions))</script>
             <div class="notebook-editor-toolbar" contenteditable="false">
@@ -65,7 +71,7 @@
             </div>
             <div class="inventory-search-popover" data-record-search hidden contenteditable="false">
                 <div class="inventory-search-controls record-search-controls">
-                    <input type="search" placeholder="Search notebook entries by code or title" data-record-search-input autocomplete="off" />
+                    <input type="search" placeholder="Search notebook entries by code or client" data-record-search-input autocomplete="off" />
                     <button type="button" class="button ghost" data-close-record-search>Close</button>
                 </div>
                 <div class="inventory-search-results" data-record-search-results></div>
@@ -110,8 +116,16 @@
 
     <section class="panel form-panel">
         <h2>E-signature</h2>
-        <label asp-for="SignatureStatement">E-signature statement</label>
-        <input asp-for="SignatureStatement" />
+        <div class="form-grid two-col">
+            <div>
+                <label asp-for="SignatureStatement">E-signature statement</label>
+                <input asp-for="SignatureStatement" />
+            </div>
+            <div>
+                <label asp-for="SignatureDate"></label>
+                <input asp-for="SignatureDate" />
+            </div>
+        </div>
     </section>
 
     <div class="editor-actions">

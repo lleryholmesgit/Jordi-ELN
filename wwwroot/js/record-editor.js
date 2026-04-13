@@ -179,6 +179,19 @@
             code: String(item.code || "").trim().toUpperCase(),
             detailPath: String(item.detailPath || `/Inventory/Details/${item.id}`)
         }));
+    const templateOptionsNode = recordRoot.querySelector("[data-template-options]");
+    const templateOptions = parseJson(templateOptionsNode?.textContent, [])
+        .map((item) => ({
+            id: item?.id ?? item?.Id,
+            name: item?.name ?? item?.Name,
+            defaultRichText: item?.defaultRichText ?? item?.DefaultRichText
+        }))
+        .filter((item) => item && item.id)
+        .map((item) => ({
+            value: String(item.id),
+            name: String(item.name || ""),
+            defaultRichText: String(item.defaultRichText || "<p><br></p>")
+        }));
     const notebookOptionsNode = recordRoot.querySelector("[data-notebook-options]");
     const notebookOptions = parseJson(notebookOptionsNode?.textContent, [])
         .map((item) => ({
@@ -200,8 +213,12 @@
     const notebookBlocksHidden = recordRoot.querySelector("[data-notebook-blocks]");
     const richTextHidden = recordRoot.querySelector("[data-rich-text-content]");
     const instrumentLinksHidden = recordRoot.querySelector("[data-instrument-links]");
+    const clientInput = recordRoot.querySelector("input[name='Title']");
+    const projectNameInput = recordRoot.querySelector("input[name='ProjectName']");
+    const experimentCodeInput = recordRoot.querySelector("input[name='ExperimentCode']");
     const editorShell = recordRoot.querySelector(".notebook-editor-shell");
     const editor = recordRoot.querySelector("[data-rich-editor]");
+    const templateSelect = recordRoot.querySelector("select[name='TemplateId']");
     const photoInput = recordRoot.querySelector("[data-photo-input]");
     const insertInventoryButton = recordRoot.querySelector("[data-insert-inventory]");
     const insertRecordLinkButton = recordRoot.querySelector("[data-insert-record-link]");
@@ -232,6 +249,8 @@
     let resizeState = null;
     let savedEditorRange = null;
     let draggedNoteBlock = null;
+    let lastTemplateId = templateSelect?.value || "";
+    let experimentCodeRequestTimer = null;
     const draggableBlockSelector = "[data-draggable-note-block]";
     const dragHandleSelector = "[data-note-block-handle]";
 
@@ -257,6 +276,47 @@
     const clearSelectedState = () => {
         selectedCells.forEach((cell) => cell.classList.remove("selected-table-cell"));
         selectedCells = [];
+    };
+
+    const normalizeEditorMarkup = (markup) => {
+        const text = String(markup || "").trim();
+        return text ? text : "<p><br></p>";
+    };
+
+    const isEditorEffectivelyEmpty = () => {
+        const clone = editor.cloneNode(true);
+        clone.querySelectorAll(".inline-widget-remove, .note-block-handle").forEach((element) => element.remove());
+        const text = clone.textContent?.replace(/\u00a0/g, " ").trim() || "";
+        const hasEmbeddedBlocks = Boolean(clone.querySelector("[data-inventory-id], [data-record-link-id], [data-equation-source], table, figure"));
+        if (hasEmbeddedBlocks) {
+            return false;
+        }
+
+        const markup = normalizeEditorMarkup(clone.innerHTML)
+            .replace(/<p><br><\/p>/gi, "")
+            .replace(/<div><br><\/div>/gi, "")
+            .replace(/\s+/g, "");
+        return !text && markup.length === 0;
+    };
+
+    const applyTemplateContent = (templateId, requireConfirmation) => {
+        const option = templateOptions.find((item) => item.value === String(templateId || ""));
+        if (!option) {
+            return true;
+        }
+
+        const nextMarkup = normalizeEditorMarkup(option.defaultRichText);
+        const currentMarkup = normalizeEditorMarkup(editor.innerHTML);
+        const hasMeaningfulContent = !isEditorEffectivelyEmpty() && currentMarkup !== nextMarkup;
+        if (requireConfirmation && hasMeaningfulContent && !window.confirm(`Replace the current notebook content with the "${option.name}" template?`)) {
+            return false;
+        }
+
+        editor.innerHTML = nextMarkup;
+        enhanceEditorContent();
+        syncHiddenFields();
+        editor.focus();
+        return true;
     };
 
     const setSelectedCells = (cells) => {
@@ -1135,6 +1195,52 @@
 
     const normalizeInventoryQuery = (value) => value.toUpperCase().replace(/\s+/g, "");
 
+    const updateExperimentCodeSuggestion = async () => {
+        if (!clientInput || !projectNameInput || !experimentCodeInput || !recordRoot.dataset.experimentCodeUrl) {
+            return;
+        }
+
+        const client = clientInput.value.trim();
+        const projectName = projectNameInput.value.trim();
+        if (!client || !projectName) {
+            experimentCodeInput.value = "";
+            return;
+        }
+
+        const recordId = recordRoot.querySelector("input[name='Id']")?.value || "";
+        const url = new URL(recordRoot.dataset.experimentCodeUrl, window.location.origin);
+        url.searchParams.set("client", client);
+        url.searchParams.set("projectName", projectName);
+        if (recordId) {
+            url.searchParams.set("recordId", recordId);
+        }
+
+        try {
+            const response = await fetch(url.toString(), {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            if (!response.ok) {
+                return;
+            }
+
+            const payload = await response.json();
+            experimentCodeInput.value = payload?.experimentCode || "";
+        } catch {
+        }
+    };
+
+    const scheduleExperimentCodeSuggestion = () => {
+        if (experimentCodeRequestTimer) {
+            window.clearTimeout(experimentCodeRequestTimer);
+        }
+
+        experimentCodeRequestTimer = window.setTimeout(() => {
+            updateExperimentCodeSuggestion();
+        }, 180);
+    };
+
     const getInventoryMatches = (query) => {
         const normalizedQuery = normalizeInventoryQuery(query || "");
         const matches = inventoryOptions.filter((item) => {
@@ -1302,10 +1408,10 @@
                 recordSearchInput.value = "";
             }
 
-            recordSearchResults?.replaceChildren();
-            editor.focus();
-            return;
-        }
+        recordSearchResults?.replaceChildren();
+        editor.focus();
+        return;
+    }
 
         renderNotebookResults(recordSearchInput?.value || "");
         recordSearchInput?.focus();
@@ -1686,6 +1792,22 @@
         photoInput?.click();
     });
 
+    templateSelect?.addEventListener("change", () => {
+        const selectedTemplateId = templateSelect.value || "";
+        if (!selectedTemplateId) {
+            lastTemplateId = "";
+            return;
+        }
+
+        const applied = applyTemplateContent(selectedTemplateId, true);
+        if (!applied) {
+            templateSelect.value = lastTemplateId;
+            return;
+        }
+
+        lastTemplateId = selectedTemplateId;
+    });
+
     closeInventorySearchButton?.addEventListener("click", () => {
         setInventorySearchVisible(false);
     });
@@ -1997,5 +2119,17 @@
     setInventorySearchVisible(false);
     setRecordSearchVisible(false);
     setEquationEditorVisible(false);
+    if ((templateSelect?.value || "") && isEditorEffectivelyEmpty()) {
+        applyTemplateContent(templateSelect.value, false);
+    }
+    if (recordRoot.dataset.initialInventoryCode && isEditorEffectivelyEmpty()) {
+        const initialOption = inventoryOptions.find((option) => option.code === recordRoot.dataset.initialInventoryCode.trim().toUpperCase());
+        if (initialOption) {
+            insertInventoryOption(initialOption);
+        }
+    }
+    clientInput?.addEventListener("input", scheduleExperimentCodeSuggestion);
+    projectNameInput?.addEventListener("input", scheduleExperimentCodeSuggestion);
+    updateExperimentCodeSuggestion();
     syncHiddenFields();
 });

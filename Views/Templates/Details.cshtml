@@ -1,0 +1,71 @@
+@model TemplateEditorViewModel
+@using ElectronicLabNotebook.Services
+@{
+    ViewData["Title"] = "Template details";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Notebook Template</p>
+        <h1>@Model.Name</h1>
+        <p class="small-note">@Model.Description</p>
+        <p>Status: <span class="status @Model.Status.ToString().ToLowerInvariant()">@Model.Status</span></p>
+    </div>
+    <div class="button-group">
+        <a class="button ghost" asp-action="ExportTrail" asp-route-id="@Model.Id">Export trail.txt</a>
+        <a class="button secondary" asp-action="Index">Back to templates</a>
+        @if (User.IsInRole("Admin") && !isIosClient && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
+        {
+            <a class="button primary" asp-action="Edit" asp-route-id="@Model.Id">Edit template</a>
+        }
+    </div>
+</section>
+
+@if (TempData["TemplateMessage"] is string templateMessage)
+{
+    <section class="panel form-panel">@templateMessage</section>
+}
+
+@if (TempData["TemplateError"] is string templateError)
+{
+    <section class="panel form-panel validation">@templateError</section>
+}
+
+<section class="panel">
+    <dl class="definition-list">
+        <div><dt>Review comment</dt><dd>@Model.ReviewComment</dd></div>
+        <div><dt>Submitted at</dt><dd>@Model.SubmittedAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd></div>
+        <div><dt>Reviewed at</dt><dd>@Model.ReviewedAtUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd></div>
+    </dl>
+    <div class="rich-content notebook-rendered-content template-rendered-content">@Html.Raw(Model.DefaultRichText)</div>
+</section>
+
+@if (User.IsInRole("Admin") && !isIosClient && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
+{
+    <form asp-action="Submit" method="post" class="inline-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="button primary">Submit for review</button>
+    </form>
+}
+
+@if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Reviewer")) && Model.Status == RecordStatus.Submitted)
+{
+    <section class="review-actions">
+        <form asp-action="Approve" method="post" class="review-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <label>Approval comment</label>
+            <textarea name="comment" rows="3"></textarea>
+            <button type="submit" class="button primary">Approve</button>
+        </form>
+        <form asp-action="Reject" method="post" class="review-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <label>Rejection comment</label>
+            <textarea name="comment" rows="3"></textarea>
+            <button type="submit" class="button ghost danger">Reject</button>
+        </form>
+    </section>
+}

@@ -1,0 +1,45 @@
+@model StorageLocationEditorViewModel
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit storage location" : "New storage location";
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Storage Locations</p>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+    <a class="button secondary" asp-action="Index">Back to locations</a>
+</section>
+
+<form asp-action="Save" method="post" class="editor-layout">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <div asp-validation-summary="All" class="validation"></div>
+
+    <section class="panel form-panel">
+        <div class="form-grid two-col">
+            <div>
+                <label asp-for="Code"></label>
+                <input asp-for="Code" readonly />
+            </div>
+            <div>
+                <label asp-for="Name"></label>
+                <input asp-for="Name" />
+            </div>
+        </div>
+        <label asp-for="Notes"></label>
+        <textarea asp-for="Notes" rows="5"></textarea>
+        <div class="button-group">
+            <button type="submit" class="button primary">Save storage location</button>
+            <button type="submit" class="button secondary" formaction="@Url.Action("GenerateQrCode", "StorageLocations")">Generate QR code</button>
+        </div>
+    </section>
+
+    <section class="panel form-panel">
+        <div class="panel-header"><h2>QR identity</h2></div>
+        <p>This QR code opens the storage location page directly. It does not perform check-in or check-out.</p>
+        <div class="qr-card">@Html.Raw(Model.QrCodeSvg)</div>
+        <label asp-for="QrCodeToken">QR payload</label>
+        <textarea asp-for="QrCodeToken" rows="4" readonly></textarea>
+    </section>
+</form>

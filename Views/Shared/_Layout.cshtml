@@ -15,6 +15,8 @@
                 <nav class="nav-list">
                     <a asp-controller="Records" asp-action="Index">Records</a>
                     <a asp-controller="Inventory" asp-action="Index">Inventory</a>
+                    <a asp-controller="StorageLocations" asp-action="Index">Storage Locations</a>
+                    <a asp-controller="Templates" asp-action="Index">Templates</a>
                     @if (User.IsInRole("Admin"))
                     {
                         <a asp-controller="Admin" asp-action="Index">Admin</a>
@@ -33,12 +35,20 @@
             }
         </aside>
         <main class="content">
+            @if (ClientDeviceDetector.IsIosClient(Context.Request))
+            {
+                <section class="panel form-panel ios-readonly-banner">
+                    <strong>iOS read-only mode</strong>
+                    <span>Browsing is supported on iPhone and iPad, but editing and admin actions are available only on Windows devices.</span>
+                </section>
+            }
             @RenderBody()
         </main>
     </div>
     <script src="~/js/record-editor.js" asp-append-version="true"></script>
     <script src="~/js/inventory-layout.js" asp-append-version="true"></script>
     <script src="~/js/qr-scan.js" asp-append-version="true"></script>
+    <script src="~/js/template-editor.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

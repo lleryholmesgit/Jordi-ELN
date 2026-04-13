@@ -1,6 +1,13 @@
 @model InstrumentEditorViewModel
 @{
-    var itemTitle = Model.ItemType == InventoryItemType.Chemical ? "chemical" : "instrument";
+    var itemTitle = Model.ItemType switch
+    {
+        InventoryItemType.Chemical => "chemical",
+        InventoryItemType.Extract => "extract",
+        InventoryItemType.Consumable => "consumable",
+        InventoryItemType.OfficeSupply => "office supply item",
+        _ => "instrument"
+    };
     ViewData["Title"] = Model.Id.HasValue ? $"Edit {itemTitle}" : $"New {itemTitle}";
 }
 
@@ -17,13 +24,13 @@
     </div>
 </section>
 
-<form asp-action="Save" method="post" class="editor-layout">
+<form asp-action="Save" method="post" class="editor-layout" data-inventory-editor>
     @Html.AntiForgeryToken()
     <input asp-for="Id" type="hidden" />
     <div asp-validation-summary="All" class="validation"></div>
     <section class="panel form-panel">
         <div class="form-grid two-col">
-            <div><label asp-for="ItemType">Item type</label><select asp-for="ItemType" asp-items="Html.GetEnumSelectList<InventoryItemType>()"></select></div>
+            <div><label asp-for="ItemType">Item type</label><select asp-for="ItemType" asp-items="Html.GetEnumSelectList<InventoryItemType>()" data-item-type-select></select></div>
             <div>
                 <label asp-for="Code"></label>
                 <input asp-for="Code" readonly />
@@ -31,20 +38,26 @@
             </div>
             <div><label asp-for="Name"></label><input asp-for="Name" /></div>
             <div><label asp-for="Manufacturer"></label><input asp-for="Manufacturer" /></div>
-            <div><label asp-for="Location"></label><input asp-for="Location" /></div>
+            <div>
+                <label asp-for="StorageLocationId">Storage location</label>
+                <select asp-for="StorageLocationId" asp-items="Model.StorageLocationOptions">
+                    <option value="">Select a storage location</option>
+                </select>
+                <small>Manage storage spaces from the Storage Locations page.</small>
+            </div>
             <div><label asp-for="Status"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<InstrumentStatus>()"></select></div>
-            <div><label asp-for="Model"></label><input asp-for="Model" /></div>
-            <div><label asp-for="SerialNumber"></label><input asp-for="SerialNumber" /></div>
-            <div><label asp-for="OwnerName">Owner</label><input asp-for="OwnerName" /></div>
-            <div><label asp-for="CalibrationInfo">Calibration info</label><input asp-for="CalibrationInfo" /></div>
-            <div><label asp-for="ProductNumber">Product number</label><input asp-for="ProductNumber" /></div>
-            <div><label asp-for="CatalogNumber">Cat number</label><input asp-for="CatalogNumber" /></div>
-            <div><label asp-for="LotNumber">Lot number</label><input asp-for="LotNumber" /></div>
-            <div><label asp-for="ExpNumber">Exp number</label><input asp-for="ExpNumber" /></div>
-            <div><label asp-for="Quantity">Quantity</label><input asp-for="Quantity" type="number" step="0.01" min="0" /></div>
-            <div><label asp-for="Unit">Unit</label><input asp-for="Unit" /></div>
-            <div><label asp-for="OpenedOn">Opened on</label><input asp-for="OpenedOn" /></div>
-            <div><label asp-for="ExpiresOn">Expiry date</label><input asp-for="ExpiresOn" /></div>
+            <div data-visible-for="Instrument,Extract,Consumable,OfficeSupply"><label asp-for="Model"></label><input asp-for="Model" /></div>
+            <div data-visible-for="Instrument,Extract,Consumable,OfficeSupply"><label asp-for="SerialNumber"></label><input asp-for="SerialNumber" /></div>
+            <div data-visible-for="Extract,Consumable,OfficeSupply"><label asp-for="OwnerName">Owner</label><input asp-for="OwnerName" /></div>
+            <div data-visible-for="Instrument,Extract,Consumable,OfficeSupply"><label asp-for="CalibrationInfo">Calibration info</label><input asp-for="CalibrationInfo" /></div>
+            <div data-visible-for="Instrument,Extract,Consumable,OfficeSupply"><label asp-for="ProductNumber">Product number</label><input asp-for="ProductNumber" /></div>
+            <div data-visible-for="Instrument,Chemical,Extract,Consumable,OfficeSupply"><label asp-for="CatalogNumber">Cat number</label><input asp-for="CatalogNumber" /></div>
+            <div data-visible-for="Instrument,Chemical,Extract,Consumable,OfficeSupply"><label asp-for="LotNumber">Lot number</label><input asp-for="LotNumber" /></div>
+            <div data-visible-for="Extract,Consumable,OfficeSupply"><label asp-for="ExpNumber">Exp number</label><input asp-for="ExpNumber" /></div>
+            <div data-visible-for="Instrument,Chemical,Extract,Consumable,OfficeSupply"><label asp-for="Quantity">Quantity</label><input asp-for="Quantity" type="number" step="0.01" min="0" /></div>
+            <div data-visible-for="Instrument,Chemical,Extract,Consumable,OfficeSupply"><label asp-for="Unit">Unit</label><input asp-for="Unit" /></div>
+            <div data-visible-for="Chemical,Extract,Consumable,OfficeSupply"><label asp-for="OpenedOn">Opened on</label><input asp-for="OpenedOn" /></div>
+            <div data-visible-for="Chemical,Extract,Consumable,OfficeSupply"><label asp-for="ExpiresOn">Expiry date</label><input asp-for="ExpiresOn" /></div>
         </div>
         <label asp-for="Notes"></label>
         <textarea asp-for="Notes" rows="6"></textarea>
@@ -62,3 +75,27 @@
         <textarea asp-for="QrCodeToken" rows="4" readonly></textarea>
     </section>
 </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const root = document.querySelector("[data-inventory-editor]");
+    const typeSelect = root?.querySelector("[data-item-type-select]");
+    if (!root || !typeSelect) {
+        return;
+    }
+
+    const applyVisibility = () => {
+        const itemType = typeSelect.options[typeSelect.selectedIndex]?.text?.trim() || typeSelect.value || "";
+        root.querySelectorAll("[data-visible-for]").forEach((section) => {
+            const allowed = (section.getAttribute("data-visible-for") || "")
+                .split(",")
+                .map((value) => value.trim())
+                .filter(Boolean);
+            section.hidden = allowed.length > 0 && !allowed.includes(itemType);
+        });
+    };
+
+    typeSelect.addEventListener("change", applyVisibility);
+    applyVisibility();
+});
+</script>

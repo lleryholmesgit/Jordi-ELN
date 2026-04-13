@@ -1,0 +1,40 @@
+@model InstrumentEditorViewModel
+@{
+    ViewData["Title"] = "QR options";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">QR Scan</p>
+        <h1>@Model.Code</h1>
+        <p>@Model.ItemType · @Model.Name</p>
+    </div>
+    <a class="button secondary" asp-action="Scan">Scan another QR</a>
+</section>
+
+@if (TempData["InventoryMessage"] is string inventoryMessage)
+{
+    <section class="panel form-panel">@inventoryMessage</section>
+}
+
+<section class="panel form-panel">
+    <div class="panel-header"><h2>Choose an action</h2></div>
+    <div class="button-group">
+        @if (!isIosClient)
+        {
+            <form asp-action="CheckInFromScan" method="post" class="inline-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="button primary">Check in</button>
+            </form>
+            <form asp-action="CheckOutFromScan" method="post" class="inline-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="button secondary">Check out</button>
+            </form>
+            <a class="button secondary" asp-controller="Records" asp-action="Create" asp-route-inventoryCode="@Model.Code">Add to ELN</a>
+        }
+        <a class="button ghost" asp-action="Details" asp-route-id="@Model.Id">View</a>
+    </div>
+</section>

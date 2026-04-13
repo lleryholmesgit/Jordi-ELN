@@ -1,0 +1,76 @@
+@model IReadOnlyList<TemplateSummaryViewModel>
+@using ElectronicLabNotebook.Services
+@{
+    ViewData["Title"] = "Templates";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
+}
+
+<section class="page-header split">
+    <div>
+        <p class="eyebrow">Notebook Templates</p>
+        <h1>Templates</h1>
+        <p class="small-note">Shared notebook templates. Highlighted text marks sections that need updating or review. Only admin users can create, edit, or delete templates.</p>
+    </div>
+    @if (User.IsInRole("Admin") && !isIosClient)
+    {
+        <a class="button primary" asp-action="Create">New template</a>
+    }
+</section>
+
+@if (TempData["TemplateMessage"] is string templateMessage)
+{
+    <section class="panel form-panel">@templateMessage</section>
+}
+
+@if (TempData["TemplateError"] is string templateError)
+{
+    <section class="panel form-panel validation">@templateError</section>
+}
+
+<section class="panel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Highlights</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var template in Model)
+        {
+            <tr>
+                <td>@template.Name</td>
+                <td>@template.Description</td>
+                <td><span class="status @template.Status.ToString().ToLowerInvariant()">@template.Status</span></td>
+                <td>
+                    @if (template.HasHighlights)
+                    {
+                        <span class="status submitted">Highlighted sections</span>
+                    }
+                    else
+                    {
+                        <span class="small-note">No highlights</span>
+                    }
+                </td>
+                <td>
+                    <div class="button-group">
+                        <a asp-action="Details" asp-route-id="@template.Id">Open</a>
+                        @if (User.IsInRole("Admin") && !isIosClient)
+                        {
+                            <a asp-action="Edit" asp-route-id="@template.Id">Edit</a>
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this template?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@template.Id" />
+                                <button type="submit" class="button ghost danger">Delete</button>
+                            </form>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</section>

@@ -99,12 +99,14 @@ public sealed class RecordsController : Controller
     }
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
-    public async Task<IActionResult> Create(CancellationToken cancellationToken)
+    [WindowsWriteAccess]
+    public async Task<IActionResult> Create(string? inventoryCode, CancellationToken cancellationToken)
     {
-        return View("Edit", await BuildEditorViewModelAsync(null, cancellationToken));
+        return View("Edit", await BuildEditorViewModelAsync(null, inventoryCode, cancellationToken));
     }
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var record = await _recordService.GetAsync(id, cancellationToken);
@@ -113,14 +115,23 @@ public sealed class RecordsController : Controller
             return NotFound();
         }
 
-        return View(await BuildEditorViewModelAsync(record, cancellationToken));
+        return View(await BuildEditorViewModelAsync(record, null, cancellationToken));
+    }
+
+    [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
+    public async Task<IActionResult> SuggestExperimentCode(string? projectName, string? client, int? recordId, CancellationToken cancellationToken)
+    {
+        var code = await _recordService.GetSuggestedExperimentCodeAsync(projectName ?? string.Empty, client ?? string.Empty, recordId, cancellationToken);
+        return Json(new { experimentCode = code });
     }
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Save(RecordEditorViewModel model, CancellationToken cancellationToken)
     {
+        model.ExperimentCode = await _recordService.GetSuggestedExperimentCodeAsync(model.ProjectName ?? string.Empty, model.Title, model.Id, cancellationToken);
         if (!ModelState.IsValid)
         {
             await PopulateEditorListsAsync(model, cancellationToken);
@@ -150,7 +161,7 @@ public sealed class RecordsController : Controller
         }
         catch (DbUpdateException exception) when (IsExperimentCodeConflict(exception))
         {
-            ModelState.AddModelError(nameof(model.ExperimentCode), "Experiment code must be unique.");
+            ModelState.AddModelError(nameof(model.ExperimentCode), "Experiment code could not be generated uniquely for this project and client. Please retry.");
             await PopulateEditorListsAsync(model, cancellationToken);
             return View("Edit", model);
         }
@@ -159,6 +170,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Submit(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -174,6 +186,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Reviewer)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Approve(int id, string? comment, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -189,6 +202,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Reviewer)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Reject(int id, string? comment, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -204,6 +218,7 @@ public sealed class RecordsController : Controller
     [Authorize(Roles = Roles.Admin + "," + Roles.Researcher)]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [WindowsWriteAccess]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var actorUserId = _userManager.GetUserId(User) ?? string.Empty;
@@ -217,7 +232,7 @@ public sealed class RecordsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<RecordEditorViewModel> BuildEditorViewModelAsync(ExperimentRecord? record, CancellationToken cancellationToken)
+    private async Task<RecordEditorViewModel> BuildEditorViewModelAsync(ExperimentRecord? record, string? initialInventoryCode, CancellationToken cancellationToken)
     {
         var model = new RecordEditorViewModel();
         var currentUserName = _userManager.GetUserName(User) ?? User.Identity?.Name ?? string.Empty;
@@ -235,6 +250,9 @@ public sealed class RecordsController : Controller
             model.FlowchartJson = record.FlowchartJson;
             model.FlowchartPreviewPath = record.FlowchartPreviewPath;
             model.SignatureStatement = string.IsNullOrWhiteSpace(record.SignatureStatement) ? model.SignatureStatement : record.SignatureStatement;
+            model.SignatureDate = record.SignatureTimestampUtc.HasValue
+                ? DateOnly.FromDateTime(record.SignatureTimestampUtc.Value.UtcDateTime)
+                : null;
             model.Status = record.Status;
             model.ReviewComment = record.ReviewComment;
             model.InstrumentLinksJson = JsonSerializer.Serialize(record.InstrumentLinks.Select(x => new RecordInstrumentLinkRequest { InstrumentId = x.InstrumentId, UsageHours = x.UsageHours }), JsonOptions);
@@ -246,6 +264,34 @@ public sealed class RecordsController : Controller
         }
 
         await PopulateEditorListsAsync(model, cancellationToken);
+        model.InitialInventoryCode = initialInventoryCode;
+        if (record is null)
+        {
+            model.ExperimentCode = await _recordService.GetSuggestedExperimentCodeAsync(model.ProjectName ?? string.Empty, model.Title, null, cancellationToken);
+        }
+
+        if (!string.IsNullOrWhiteSpace(initialInventoryCode) && string.IsNullOrWhiteSpace(record?.RichTextContent))
+        {
+            var option = model.InventoryLookupOptions.FirstOrDefault(x => string.Equals(x.Code, initialInventoryCode, StringComparison.OrdinalIgnoreCase));
+            if (option is not null)
+            {
+                model.RichTextContent = $"""
+<div class="inventory-inline-card" contenteditable="false" data-inventory-id="{option.Id}">
+    <a href="{option.DetailPath}" target="_blank" rel="noreferrer">{System.Net.WebUtility.HtmlEncode(option.Label)}</a>
+    <span class="inventory-pill-hours">Linked</span>
+</div>
+<p><br></p>
+""";
+                model.InstrumentLinksJson = JsonSerializer.Serialize(new[]
+                {
+                    new RecordInstrumentLinkRequest
+                    {
+                        InstrumentId = option.Id
+                    }
+                }, JsonOptions);
+            }
+        }
+
         return model;
     }
 
@@ -254,6 +300,16 @@ public sealed class RecordsController : Controller
         model.TemplateOptions = await _context.RecordTemplates
             .OrderBy(x => x.Name)
             .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
+            .ToListAsync(cancellationToken);
+
+        model.TemplatePayloads = await _context.RecordTemplates
+            .OrderBy(x => x.Name)
+            .Select(x => new RecordTemplatePayloadViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                DefaultRichText = string.IsNullOrWhiteSpace(x.DefaultRichText) ? "<p><br></p>" : x.DefaultRichText
+            })
             .ToListAsync(cancellationToken);
 
         model.InstrumentOptions = await _context.Instruments
@@ -305,6 +361,7 @@ public sealed class RecordsController : Controller
             FlowchartJson = model.FlowchartJson ?? "{\"nodes\":[],\"edges\":[]}",
             FlowchartPreviewPath = model.FlowchartPreviewPath ?? string.Empty,
             SignatureStatement = model.SignatureStatement ?? string.Empty,
+            SignatureDate = model.SignatureDate,
             InstrumentLinks = string.IsNullOrWhiteSpace(model.InstrumentLinksJson)
                 ? new List<RecordInstrumentLinkRequest>()
                 : JsonSerializer.Deserialize<List<RecordInstrumentLinkRequest>>(model.InstrumentLinksJson, JsonOptions) ?? new List<RecordInstrumentLinkRequest>()
@@ -332,7 +389,9 @@ public sealed class RecordsController : Controller
 
     private static bool IsExperimentCodeConflict(DbUpdateException exception)
     {
-        return exception.InnerException?.Message.Contains("ExperimentRecords.ExperimentCode", StringComparison.OrdinalIgnoreCase) == true
+        return exception.InnerException?.Message.Contains("IX_ExperimentRecords_ProjectName_Title_ExperimentCode", StringComparison.OrdinalIgnoreCase) == true
+            || exception.Message.Contains("IX_ExperimentRecords_ProjectName_Title_ExperimentCode", StringComparison.OrdinalIgnoreCase)
+            || exception.InnerException?.Message.Contains("ExperimentRecords.ExperimentCode", StringComparison.OrdinalIgnoreCase) == true
             || exception.Message.Contains("ExperimentRecords.ExperimentCode", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -340,7 +399,7 @@ public sealed class RecordsController : Controller
     {
         var builder = new StringBuilder();
         builder.AppendLine("Jordi ELN Record Trail");
-        builder.AppendLine($"Title: {record.Title}");
+        builder.AppendLine($"Client: {record.Title}");
         builder.AppendLine($"Experiment code: {record.ExperimentCode}");
         builder.AppendLine($"Current status: {record.Status}");
         builder.AppendLine($"Exported at: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}");
@@ -404,7 +463,7 @@ public sealed class RecordsController : Controller
             }
 
             var parts = new List<string>();
-            AppendJsonSummaryPart(root, "title", "Title", parts);
+            AppendJsonSummaryPart(root, "title", "Client", parts);
             AppendJsonSummaryPart(root, "experimentCode", "Code", parts);
             AppendJsonSummaryPart(root, "status", "Status", parts);
             AppendJsonSummaryPart(root, "projectName", "Project", parts);

@@ -1,6 +1,7 @@
-﻿@model ExperimentRecord
+@model ExperimentRecord
 @{
     ViewData["Title"] = "Record details";
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -11,7 +12,7 @@
     </div>
     <div class="button-group">
         <a class="button ghost" asp-action="ExportTrail" asp-route-id="@Model.Id">Export trail.txt</a>
-        @if ((User.IsInRole("Admin") || User.IsInRole("Researcher")) && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
+        @if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Researcher")) && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
         {
             <a class="button secondary" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
             <form asp-action="Delete" method="post" class="inline-form" onsubmit="return confirm('Delete this record?');">
@@ -32,11 +33,13 @@
     <article class="panel">
         <h2>Overview</h2>
         <dl class="definition-list">
+            <div><dt>Client</dt><dd>@Model.Title</dd></div>
             <div><dt>Project</dt><dd>@Model.ProjectName</dd></div>
             <div><dt>Technician</dt><dd>@Model.PrincipalInvestigator</dd></div>
             <div><dt>Template</dt><dd>@Model.Template?.Name</dd></div>
             <div><dt>Review comment</dt><dd>@Model.ReviewComment</dd></div>
             <div><dt>E-signature</dt><dd>@Model.SignatureStatement</dd></div>
+            <div><dt>Signature date</dt><dd>@Model.SignatureTimestampUtc?.ToString("yyyy-MM-dd")</dd></div>
         </dl>
         <h3>Notebook</h3>
         <div class="rich-content notebook-rendered-content">@Html.Raw(Model.RichTextContent)</div>
@@ -62,7 +65,7 @@
     </article>
 </section>
 
-@if ((User.IsInRole("Admin") || User.IsInRole("Researcher")) && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
+@if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Researcher")) && (Model.Status == RecordStatus.Draft || Model.Status == RecordStatus.Rejected))
 {
     <form asp-action="Submit" method="post" class="inline-form">
         @Html.AntiForgeryToken()
@@ -71,7 +74,7 @@
     </form>
 }
 
-@if ((User.IsInRole("Admin") || User.IsInRole("Reviewer")) && Model.Status == RecordStatus.Submitted)
+@if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Reviewer")) && Model.Status == RecordStatus.Submitted)
 {
     <section class="review-actions">
         <form asp-action="Approve" method="post" class="review-form">

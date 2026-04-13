@@ -13,6 +13,7 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ExperimentRecord> ExperimentRecords => Set<ExperimentRecord>();
     public DbSet<RecordTemplate> RecordTemplates => Set<RecordTemplate>();
     public DbSet<Instrument> Instruments => Set<Instrument>();
+    public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
     public DbSet<RecordInstrumentLink> RecordInstrumentLinks => Set<RecordInstrumentLink>();
     public DbSet<ExperimentAttachment> ExperimentAttachments => Set<ExperimentAttachment>();
     public DbSet<ReviewAction> ReviewActions => Set<ReviewAction>();
@@ -31,8 +32,20 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(x => x.QrCodeToken)
             .IsUnique();
 
+        builder.Entity<StorageLocation>()
+            .HasIndex(x => x.Code)
+            .IsUnique();
+
+        builder.Entity<StorageLocation>()
+            .HasIndex(x => x.QrCodeToken)
+            .IsUnique();
+
+        builder.Entity<StorageLocation>()
+            .HasIndex(x => x.Name)
+            .IsUnique();
+
         builder.Entity<ExperimentRecord>()
-            .HasIndex(x => x.ExperimentCode)
+            .HasIndex(x => new { x.ProjectName, x.Title, x.ExperimentCode })
             .IsUnique();
 
         builder.Entity<ApplicationSetting>()
@@ -51,5 +64,11 @@ public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(x => x.Instrument)
             .WithMany(x => x.RecordLinks)
             .HasForeignKey(x => x.InstrumentId);
+
+        builder.Entity<Instrument>()
+            .HasOne(x => x.StorageLocation)
+            .WithMany(x => x.InventoryItems)
+            .HasForeignKey(x => x.StorageLocationId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -2,6 +2,7 @@ using ElectronicLabNotebook.Data;
 using ElectronicLabNotebook.Models;
 using ElectronicLabNotebook.Services;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,12 +64,21 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks();
+builder.Services.Configure<AccountEmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<IInstrumentService, InstrumentService>();
+builder.Services.AddScoped<IAccountEmailService, AccountEmailService>();
 
 var app = builder.Build();
 
@@ -82,6 +92,7 @@ else
     app.UseHsts();
 }
 
+app.UseForwardedHeaders();
 if (HasConfiguredHttpsEndpoint(builder.Configuration))
 {
     app.UseHttpsRedirection();
@@ -92,6 +103,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Inventory}/{action=Index}/{id?}");

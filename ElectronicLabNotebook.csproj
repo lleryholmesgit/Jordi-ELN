@@ -20,5 +20,9 @@
     <Content Remove="Tests\**\*" />
     <EmbeddedResource Remove="Tests\**\*" />
     <None Remove="Tests\**\*" />
+    <Compile Remove=".codex-*\**\*.cs" />
+    <Content Remove=".codex-*\**\*" />
+    <EmbeddedResource Remove=".codex-*\**\*" />
+    <None Remove=".codex-*\**\*" />
   </ItemGroup>
 </Project>

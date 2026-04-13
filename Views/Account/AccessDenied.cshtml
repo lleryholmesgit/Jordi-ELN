@@ -1,8 +1,9 @@
 @{
     ViewData["Title"] = "Access denied";
+    var accessDeniedMessage = TempData["AccessDeniedMessage"] as string;
 }
 
 <section class="page-header">
     <h1>Access denied</h1>
-    <p>Your account does not have permission to access this page.</p>
+    <p>@(string.IsNullOrWhiteSpace(accessDeniedMessage) ? "Your account does not have permission to access this page." : accessDeniedMessage)</p>
 </section>

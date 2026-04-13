@@ -8,7 +8,7 @@ public sealed class RecordSaveRequest
     [Required, MaxLength(160)]
     public string Title { get; set; } = string.Empty;
 
-    [Required, MaxLength(64)]
+    [MaxLength(64)]
     public string ExperimentCode { get; set; } = string.Empty;
 
     public DateOnly ConductedOn { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -30,6 +30,8 @@ public sealed class RecordSaveRequest
     public string? FlowchartPreviewPath { get; set; }
 
     public string? SignatureStatement { get; set; }
+
+    public DateOnly? SignatureDate { get; set; }
 
     public List<RecordInstrumentLinkRequest> InstrumentLinks { get; set; } = new();
 }

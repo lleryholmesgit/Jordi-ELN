@@ -10,6 +10,7 @@
         ?? record.CreatedByUser?.Email
         ?? record.CreatedByUser?.DisplayName
         ?? record.CreatedByUserId;
+    bool isIosClient = ClientDeviceDetector.IsIosClient(Context.Request);
 }
 
 <section class="page-header split">
@@ -17,11 +18,14 @@
         <p class="eyebrow">Experiment Records</p>
         <h1>Records</h1>
     </div>
-    <a class="button primary" asp-action="Create">New record</a>
+    @if (!isIosClient)
+    {
+        <a class="button primary" asp-action="Create">New record</a>
+    }
 </section>
 
 <form method="get" class="toolbar">
-    <input type="search" name="q" value="@ViewBag.Query" placeholder="Search title, code, or project" />
+    <input type="search" name="q" value="@ViewBag.Query" placeholder="Search client, code, or project" />
     <select name="status">
         <option value="">All statuses</option>
         @foreach (RecordStatus status in Enum.GetValues(typeof(RecordStatus)))
@@ -43,7 +47,7 @@
     <thead>
         <tr>
             <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="ExperimentCode" asp-route-descending="@nextDirection("ExperimentCode")">Code</a></th>
-            <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="Title" asp-route-descending="@nextDirection("Title")">Title</a></th>
+            <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="Title" asp-route-descending="@nextDirection("Title")">Client</a></th>
             <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="ConductedOn" asp-route-descending="@nextDirection("ConductedOn")">Date</a></th>
             <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="ProjectName" asp-route-descending="@nextDirection("ProjectName")">Project</a></th>
             <th><a asp-action="Index" asp-route-q="@ViewBag.Query" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-sortBy="UserName" asp-route-descending="@nextDirection("UserName")">User</a></th>
@@ -64,7 +68,7 @@
             <td>
                 <div class="button-group">
                     <a asp-action="Details" asp-route-id="@item.Id">Open</a>
-                    @if (User.IsInRole("Admin") || User.IsInRole("Researcher"))
+                    @if (!isIosClient && (User.IsInRole("Admin") || User.IsInRole("Researcher")))
                     {
                         <form asp-action="Delete" method="post" class="inline-form" onsubmit="return confirm('Delete this record?');">
                             @Html.AntiForgeryToken()
