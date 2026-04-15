@@ -7,6 +7,11 @@ public static class SchemaUpdater
 {
     public static async Task EnsureCurrentSchemaAsync(ApplicationDbContext context)
     {
+        if (!context.Database.IsSqlite())
+        {
+            return;
+        }
+
         await EnsureTableAsync(context, "ApplicationSettings", @"
 CREATE TABLE IF NOT EXISTS [ApplicationSettings] (
     [Id] INTEGER NOT NULL CONSTRAINT [PK_ApplicationSettings] PRIMARY KEY AUTOINCREMENT,

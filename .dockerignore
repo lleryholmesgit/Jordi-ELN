@@ -1,0 +1,28 @@
+.git
+.github
+.vs
+bin
+obj
+App_Data
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.html
+.codex-*
+.cookie-*
+.dotnet
+.dotnet-cli
+.dotnet_cli
+.nuget
+.nuget-packages
+.playwright-cli
+Dockerfile
+docker-compose*.yml
+**/.env
+**/.env.*
+To do list.docx
+Things to do.txt
+~$*.docx
+~WRL*.tmp
+qc

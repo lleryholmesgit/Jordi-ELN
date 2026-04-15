@@ -8,6 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+static string ResolveContentPath(IWebHostEnvironment environment, string path)
+{
+    return Path.IsPathRooted(path)
+        ? path
+        : Path.Combine(environment.ContentRootPath, path);
+}
+
 static bool HasConfiguredHttpsEndpoint(IConfiguration configuration)
 {
     var urls = configuration["ASPNETCORE_URLS"] ?? configuration["urls"] ?? string.Empty;
@@ -32,7 +39,9 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-var dataProtectionPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
+var dataProtectionPath = ResolveContentPath(
+    builder.Environment,
+    builder.Configuration["DataProtection:KeysPath"] ?? "App_Data/DataProtectionKeys");
 Directory.CreateDirectory(dataProtectionPath);
 
 builder.Services.AddDataProtection()
@@ -40,7 +49,32 @@ builder.Services.AddDataProtection()
     .SetApplicationName("ElectronicLabNotebook");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
+    }
+
+    if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase) ||
+        provider.Equals("AzureSql", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlServer(connectionString, sql =>
+        {
+            sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        });
+        return;
+    }
+
+    if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(connectionString);
+        return;
+    }
+
+    throw new InvalidOperationException($"Unsupported database provider '{provider}'. Use 'Sqlite' for local development or 'SqlServer' for Azure SQL.");
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {

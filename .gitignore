@@ -5,6 +5,10 @@ App_Data/
 *.db
 *.db-shm
 *.db-wal
+.env
+.env.*
+appsettings.Production.json
+appsettings.*.local.json
 .vs/
 .codex-build*/
 .codex-playwright/

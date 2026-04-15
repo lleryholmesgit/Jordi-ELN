@@ -5,6 +5,7 @@ Set-Location $scriptRoot
 
 $env:DOTNET_CLI_HOME = Join-Path $scriptRoot ".dotnet-cli"
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
+$env:ASPNETCORE_ENVIRONMENT = "Development"
 New-Item -ItemType Directory -Force -Path $env:DOTNET_CLI_HOME | Out-Null
 
 $escapedRoot = [Regex]::Escape($scriptRoot)

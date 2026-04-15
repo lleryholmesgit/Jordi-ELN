@@ -10,7 +10,12 @@ public sealed class QrCodeService : IQrCodeService
 
     public QrCodeService(IConfiguration configuration)
     {
-        var signingKey = configuration["QrCode:SigningKey"] ?? throw new InvalidOperationException("QrCode signing key is missing.");
+        var signingKey = configuration["QrCode:SigningKey"];
+        if (string.IsNullOrWhiteSpace(signingKey))
+        {
+            throw new InvalidOperationException("QrCode:SigningKey is required and must be provided through secure configuration.");
+        }
+
         _key = Encoding.UTF8.GetBytes(signingKey);
     }
 
